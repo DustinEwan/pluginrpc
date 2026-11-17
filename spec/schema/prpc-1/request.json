@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pluginrpc.dev/spec/prpc-1/request.json",
+  "$id": "https://github.com/DustinEwan/pluginrpc/spec/prpc-1/request.json",
   "title": "Request",
   "description": "One request from the host to the plugin. Every request carries an id: notifications and batching are not part of the mechanism. The params schema belongs to the profile; this envelope constrains only the envelope fields. The envelope is open, so a profile may declare fields beside these and checks them in its own schema.",
   "type": "object",

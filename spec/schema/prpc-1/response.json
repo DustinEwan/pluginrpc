@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pluginrpc.dev/spec/prpc-1/response.json",
+  "$id": "https://github.com/DustinEwan/pluginrpc/spec/prpc-1/response.json",
   "title": "Response",
   "description": "One response from the plugin, discriminated by result or error, with exactly one present. A response carrying both is malformed: the plugin assigned a result and then failed, and reading the result would report success while discarding the failure. The envelope is open, so a profile may declare fields beside these and checks them in its own schema. The result schema belongs to the profile.",
   "type": "object",

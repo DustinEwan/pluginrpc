@@ -98,7 +98,9 @@ requests from stdin and writes responses to stdout.
 
 ## 4. Requests and responses
 
-The normative envelope schemas are in `spec/schema/prpc-1/`.
+The normative envelope schemas are in `spec/schema/prpc-1/`. Each file names itself with a `$id`
+under this repository's URL; that `$id` is a namespace, not an address, because every `$ref` in
+the three files is local and a validator needs no network access to check a message.
 
 A request is `{"jsonrpc":"2.0","id":<id>,"method":<string>,"params":<value>}`. The host assigns
 `id` as an integer with `1 <= id <= 2^53 - 1`; the upper bound keeps the id exact for a plugin

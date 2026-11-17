@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pluginrpc.dev/spec/prpc-1/handshake.json",
+  "$id": "https://github.com/DustinEwan/pluginrpc/spec/prpc-1/handshake.json",
   "title": "Handshake envelope",
   "description": "The core fields of the handshake response. The object is intentionally open (additionalProperties is true): a profile adds its own top-level fields, and the host reads only these four.",
   "type": "object",
