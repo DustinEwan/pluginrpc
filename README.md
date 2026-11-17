@@ -53,9 +53,10 @@ rather than advise:
   tell which request a refusal belongs to. `MIN_HOST_ID`, `UNCORRELATED_ID`, and `MAX_ID` state
   the bounds, and `check_id` enforces them on both directions.
 
-`Answer` separates what the plugin said from whether the plugin said anything. A call returns an
-`Answer`, which is a payload or a `Refusal`, and a refusal is an answer: the plugin was reachable
-and reported that the work did not happen. `Loss` holds the five reasons a host receives no
-answer, plus `Loss::Profile` for a case the mechanism cannot name, such as a result that fails
-the profile's own schema. `Loss::resolve` keeps the more specific reason when two arrive together,
-which is the ordering both a restart and a report depend on.
+`Call<T>` is what one call ended as: a payload, a `Refusal`, or a `Lost`. A refusal is an answer,
+so only `Call::Lost` says anything about the process, and `Call::answered()` is the single test a
+host makes before restarting. A result the profile's own type cannot read is a loss carrying the
+reason `UNUSABLE_RESULT`, not a refusal. `Loss` holds the five reasons a host receives no answer,
+plus `Loss::Profile` for a case the mechanism cannot name. `Loss::resolve` keeps the first cause
+when two arrive together and lets a later reason replace only `eof` or `no answer`, which is the
+ordering both a restart and a report depend on.

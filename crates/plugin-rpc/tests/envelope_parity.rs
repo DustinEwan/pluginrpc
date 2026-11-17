@@ -32,7 +32,10 @@ fn verdict(case: &Case) -> &'static str {
         "request" => parse_request(&case.message.to_string()).is_ok(),
         "response" => parse_response(&case.message.to_string()).is_ok(),
         "handshake" => serde_json::from_value::<Handshake>(case.message.clone()).is_ok(),
-        other => panic!("case `{}` names `{other}`, which is no envelope schema", case.name),
+        other => panic!(
+            "case `{}` names `{other}`, which is no envelope schema",
+            case.name
+        ),
     };
     if accepted {
         "accept"

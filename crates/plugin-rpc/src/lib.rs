@@ -24,6 +24,12 @@ pub const INVALID_REQUEST: i64 = -32600;
 pub const METHOD_NOT_FOUND: i64 = -32601;
 /// Application-level failure inside the plugin (spec §5).
 pub const PLUGIN_ERROR: i64 = -32000;
+
+/// The [`Loss::Profile`] reason the mechanism reports when a response carried a result the
+/// profile's own type could not read (spec §8). A profile that names its own reason for that case
+/// replaces this one.
+pub const UNUSABLE_RESULT: &str = "unusable-result";
+
 /// The largest id a JavaScript plugin can carry in a double (spec §4). The host assigns ids
 /// at or below this bound; a host that cannot guarantee it has outlived its profile.
 pub const MAX_ID: u64 = 9_007_199_254_740_991;
@@ -174,12 +180,15 @@ impl<'de> Deserialize<'de> for Response {
             .map_err(de::Error::custom)?
             .ok_or_else(|| de::Error::custom("a response has no `id` field"))?;
         check_id(id, UNCORRELATED_ID).map_err(de::Error::custom)?;
-        let result: Option<Value> =
-            take_field(&mut fields, "result").map_err(de::Error::custom)?;
+        let result: Option<Value> = take_field(&mut fields, "result").map_err(de::Error::custom)?;
         let error: Option<ErrorObject> =
             take_field(&mut fields, "error").map_err(de::Error::custom)?;
         match (result, error) {
-            (Some(result), None) => Ok(Response::Success(Success { jsonrpc, id, result })),
+            (Some(result), None) => Ok(Response::Success(Success {
+                jsonrpc,
+                id,
+                result,
+            })),
             (None, Some(error)) => Ok(Response::Failure(Failure { jsonrpc, id, error })),
             (Some(_), Some(_)) => Err(de::Error::custom(
                 "a response carries exactly one of `result` or `error`; this one carries both",
@@ -225,36 +234,84 @@ impl Response {
         }
     }
 
-    /// The answer the host acts on: a payload, or the plugin's refusal.
-    pub fn into_answer(self) -> Answer {
+    /// What the call ended as, with the payload read into the type the profile declared. A
+    /// response is always an answer, so this never reports a loss for a refusal. It does report a
+    /// loss when the result does not fit the declared type, because that is an answer the profile
+    /// cannot use, and §8 files that under loss with the reason [`UNUSABLE_RESULT`].
+    pub fn into_call<T: de::DeserializeOwned>(self) -> Call<T> {
         match self {
-            Response::Success(s) => Answer::Result(s.result),
-            Response::Failure(f) => Answer::Refusal(f.error),
+            Response::Success(s) => serde_json::from_value(s.result).map_or_else(
+                |e| {
+                    Call::Lost(Loss::Profile {
+                        reason: UNUSABLE_RESULT.to_string(),
+                        detail: e.to_string(),
+                    })
+                },
+                Call::Result,
+            ),
+            Response::Failure(f) => Call::Refusal(f.error),
         }
     }
 }
 
-/// What the plugin answered, once the connection delivered the request (spec §8). A host decides
-/// per method what a refusal means; a refusal never means the process must be restarted, because
-/// the plugin answered.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
-#[serde(untagged)]
-pub enum Answer {
-    Result(Value),
+/// What one plugin call ended as (spec §8). The three endings ask three different things of the
+/// host: a payload to use, a reason to report while keeping the process, or a process to restart.
+///
+/// A profile returns this from its own call method. A host that returns `Result<T, its own error>`
+/// instead has nowhere to put a refusal, and reports an answer as a lost plugin; the two hosts
+/// that drove this type had each written that alias, under the same name, before it existed.
+///
+/// This is a host-side value and not a message: it carries no `jsonrpc` and no `id`, so it is
+/// never serialized and no envelope schema describes it.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Call<T> {
+    /// The plugin answered with a payload the profile could read.
+    Result(T),
+    /// The plugin answered that the work did not happen. The process is alive, so the host keeps
+    /// it: a refusal is an answer, not a fault in the connection (spec §8).
     Refusal(ErrorObject),
+    /// No answer arrived. This is the only case that says anything about the process.
+    Lost(Loss),
 }
 
-impl Answer {
-    /// The payload, or the refusal that stood in place of one.
-    pub fn value(self) -> Result<Value, ErrorObject> {
+impl<T> Call<T> {
+    /// The payload, when the plugin produced one the profile could read.
+    pub fn payload(self) -> Option<T> {
         match self {
-            Answer::Result(value) => Ok(value),
-            Answer::Refusal(error) => Err(error),
+            Call::Result(value) => Some(value),
+            _ => None,
         }
     }
 
-    pub fn is_refusal(&self) -> bool {
-        matches!(self, Answer::Refusal(_))
+    /// The refusal, when the plugin answered with one.
+    pub fn refusal(self) -> Option<ErrorObject> {
+        match self {
+            Call::Refusal(error) => Some(error),
+            _ => None,
+        }
+    }
+
+    /// Why no answer arrived, when none did.
+    pub fn loss(self) -> Option<Loss> {
+        match self {
+            Call::Lost(loss) => Some(loss),
+            _ => None,
+        }
+    }
+
+    /// Whether the plugin answered. Only [`Call::Lost`] says anything about the process, so this
+    /// is the test a host makes before deciding whether to restart.
+    pub fn answered(&self) -> bool {
+        !matches!(self, Call::Lost(_))
+    }
+
+    /// Put the payload in the shape the caller wants, leaving a refusal and a loss untouched.
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Call<U> {
+        match self {
+            Call::Result(value) => Call::Result(f(value)),
+            Call::Refusal(error) => Call::Refusal(error),
+            Call::Lost(loss) => Call::Lost(loss),
+        }
     }
 }
 
@@ -359,31 +416,34 @@ pub enum Loss {
 }
 
 impl Loss {
-    /// Whether `self` is the more specific of two reasons observed within milliseconds of each
-    /// other (spec §8). The host's own kill outranks the exit status that kill produced, and an
-    /// exit status outranks the closed pipe the reader noticed first, because the closed pipe is
-    /// what the reader saw on its way to the process actually dying.
-    pub fn outranks(&self, other: &Loss) -> bool {
-        self.rank() > other.rank()
-    }
-
-    /// The reason to record when `observed` arrives and `recorded` already holds a reason: the
-    /// more specific of the two, which keeps a caller's state to one field.
+    /// The reason to record when `observed` arrives and `recorded` already holds one (spec §8).
+    ///
+    /// The first cause stands, because the observations that follow a cause are usually that
+    /// cause's consequences. Preferring the later one mis-attributes the death: a `killed` recorded
+    /// after an `exited` would credit the host with ending a process that had already gone, the
+    /// opposite of what recording the kill first is for. Two reasons name what an observer noticed
+    /// rather than what happened to the process — `eof` is what the reader saw, `no answer` is what
+    /// the deadline saw — and a later reason replaces either of those.
     pub fn resolve(recorded: Option<Loss>, observed: Loss) -> Loss {
         match recorded {
-            Some(previous) if previous.outranks(&observed) || previous == observed => previous,
+            Some(previous) if previous.rank() >= observed.rank() => previous,
             _ => observed,
         }
     }
 
+    /// Whether the host asked for this. Only [`Loss::Killed`] means the host ended the plugin, and
+    /// a host classifies a kill with a request in flight differently from a death the plugin chose.
+    pub fn host_requested(&self) -> bool {
+        matches!(self, Loss::Killed)
+    }
+
+    /// What happened to the process outranks what an observer noticed, and a passed deadline
+    /// outranks nothing. Two reasons of the same kind tie, and a tie keeps the first.
     fn rank(&self) -> u8 {
         match self {
-            Loss::Killed => 4,
-            Loss::Exited { .. } => 3,
-            Loss::Spawn { .. } => 3,
-            Loss::Eof => 2,
-            Loss::Profile { .. } => 1,
             Loss::NoAnswer => 0,
+            Loss::Eof => 1,
+            _ => 2,
         }
     }
 }
@@ -404,7 +464,9 @@ impl std::fmt::Display for Loss {
             Loss::Exited { .. } => write!(f, "the plugin exited"),
             Loss::Killed => write!(f, "the host killed the plugin"),
             Loss::NoAnswer => write!(f, "the plugin did not answer before its deadline"),
-            Loss::Profile { reason, detail } => write!(f, "the plugin answered unusably ({reason}): {detail}"),
+            Loss::Profile { reason, detail } => {
+                write!(f, "the plugin answered unusably ({reason}): {detail}")
+            }
         }
     }
 }

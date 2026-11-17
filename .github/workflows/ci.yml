@@ -23,6 +23,11 @@ jobs:
         with:
           components: clippy
 
+      # autofuzz and veridoc both carry drifted formatting, because neither gates it. This
+      # repository is the one a plugin author reads next to the specification, so it stays clean.
+      - name: Format
+        run: cargo fmt --all --check
+
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 

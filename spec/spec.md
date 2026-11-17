@@ -198,14 +198,22 @@ exactly one per lost connection:
 | `no answer` | The deadline the host set passed with the request still waiting. |
 
 Several reasons can be observed within milliseconds of each other, so the mechanism fixes which
-one the host records: the more specific reason wins. The host's own `killed` outranks the exit
-status that kill produced, and an `exited` outranks the `eof` that the reader noticed first,
-because the closed pipe is what the reader saw on its way to the process actually dying. `no
-answer` is what the host records when it observed nothing more specific.
+one the host records: the first cause stands. The observations that follow a cause are usually that
+cause's consequences, which is why a host records its own `killed` before it sends it and the
+`exited` that kill produced never replaces it. The ordering matters in the other direction as well:
+a `killed` recorded after an `exited` must not replace it, because a process that had already gone
+is not the host's doing. Two reasons name what an observer noticed rather than what happened to the
+process — `eof` is what the reader saw on the way down, `no answer` is what the deadline saw — and a
+later reason replaces either of those, so `exited` replaces `eof` and `eof` replaces `no answer`.
 
 A refusal is not a loss. A refusal means the connection delivered the request and brought back
 an answer that says the work did not happen, and the host handles that per the profile rather
 than by restarting or giving up on the process.
+
+The mechanism names these three endings as the one value a host's call returns: a payload, a
+refusal, or a loss. A host that invents its own error enum instead has nowhere to put a refusal,
+and ends up reporting an answer as a lost plugin. Only the loss says anything about the process, so
+the host's restart decision is a single test rather than a reading of the error text.
 
 A profile MAY add loss reasons for the cases where the mechanism delivered an answer the profile
 cannot use — a result that fails the profile's own schema, or a request that names a session
