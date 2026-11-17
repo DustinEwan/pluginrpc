@@ -1,0 +1,18 @@
+[package]
+name = "plugin-rpc-conformance"
+description = "Reference implementation of the pluginrpc conformance procedure: the six core rules, the profile spec reader, and the report shape."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository = "https://github.com/DustinEwan/pluginrpc"
+documentation = "https://docs.rs/plugin-rpc-conformance"
+readme = "../../README.md"
+keywords = ["json-rpc", "plugin", "conformance", "testing"]
+categories = ["development-tools::testing"]
+
+[dependencies]
+plugin-rpc = { path = "../plugin-rpc", version = "0.1.0-alpha.5" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

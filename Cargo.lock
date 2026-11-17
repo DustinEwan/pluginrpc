@@ -31,6 +31,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "plugin-rpc-conformance"
+version = "0.1.0-alpha.5"
+dependencies = [
+ "plugin-rpc",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"

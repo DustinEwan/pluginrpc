@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/plugin-rpc"]
+members = ["crates/plugin-rpc", "crates/plugin-rpc-conformance"]
 
 [workspace.package]
 version = "0.1.0-alpha.5"

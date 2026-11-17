@@ -32,14 +32,15 @@ rule.
 | Path | What it is |
 | --- | --- |
 | `spec/spec.md` | The normative mechanism specification, revision `prpc/1`, opening with the glossary |
-| `spec/schema/prpc-1/` | The normative envelope schemas (JSON Schema draft 2020-12) |
+| `spec/schema/prpc-1/` | The normative envelope schemas, and `profile.json`, the meta-schema for the one file a profile publishes (JSON Schema draft 2020-12) |
 | `spec/core-rules.json` | The conformance rules every profile inherits |
 | `crates/plugin-rpc/` | Rust reference implementation of the messages, the loss reasons, and the answers; `src/process.rs` adds the transport for a plugin started as a child process |
+| `crates/plugin-rpc-conformance/` | Rust reference implementation of the conformance procedure: the profile-spec reader, the six core rules, the report shape, and the `prpc-core` command |
 
 ## Reference implementation
 
 The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`.
-Its 33 tests assert the wire contract exactly as a plugin written in any other language must
+Its 34 tests assert the wire contract exactly as a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,
 blank-line loss, the open envelope, the reserved id 0, and the two rules the types enforce
@@ -71,7 +72,7 @@ four core ones reach the host without a second `handshake` request.
 stderr, which §3 requires, because a pipe nobody reads stops the plugin, it records
 `Loss::Killed` before it asks for a kill so an in-flight call is attributed to the host rather
 than to the exit status that kill produced, and it ends the plugin on drop unless `detach` said
-otherwise. The 15 tests in `tests/process.rs` start real child processes, so they cover a plugin
+otherwise. The 16 tests in `tests/process.rs` start real child processes, so they cover a plugin
 that refuses, stays silent, writes to stderr, answers with an `id` 0 refusal, carries profile
 fields in the handshake, and dies or is killed while a call is in flight. A call waiting on a dead
 plugin is woken when the process goes, so a restart policy that counts consecutive losses does not
@@ -83,3 +84,31 @@ cause, and how long `kill` blocks for the process to be gone. §9's deadline pai
 `Timeouts::plugin_deadline` when the host's configuration names its own wait, and from
 `Timeouts::host_wait` when it names the plugin's budget, so the rule is written once and neither
 direction silently changes what the host's own option means.
+
+## Conformance
+
+A profile publishes one file, the **profile spec**, naming the mechanism revision it is written
+for and the six things §10 requires of it: its `protocolVersion`, its manifest filename, its method
+set with the path to each request and response schema, its capability vocabulary with what the host
+does when each is absent, its loss mapping, and its own rules with the scripted defect that proves
+each one or a sentence saying none exists. Its shape is `spec/schema/prpc-1/profile.json`, and
+`plugin-rpc-conformance` reads it.
+
+The six rules in `spec/core-rules.json` name no method of any profile, so the mechanism runs them
+for every profile from that file and the plugin's manifest alone, with no profile code:
+
+```
+cargo run -p plugin-rpc-conformance --bin prpc-core -- <profile.json> <manifest.json>
+```
+
+It reports `pass`, `violation`, or `not-applicable` per rule, and a rule the run could not attempt
+is counted not applicable with the reason that stopped it, never as a pass. Its own tests carry one
+scripted defect per rule, so each of the six is shown to fire on the failure it targets (§12 item
+4) — the discipline the audit found missing from the two profiles this mechanism came out of.
+
+A profile's own rules are a **suite program**, run as `<argv> --out <dir>` and writing
+`verdicts.json`, for the same reason the fixture emitter already is a program: those rules compare
+one response against another, fold across ten invocations, and derive inputs by hashing, and the
+mechanism is not a programming language. A suite in any language produces the same report because
+§12 fixes the order, the three results, the not-applicable accounting, and the rule that a missing
+verdict is a suite error rather than a pass.

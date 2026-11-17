@@ -1,0 +1,58 @@
+{
+  "mechanism": "prpc/1",
+  "protocolVersion": "demo/1",
+  "manifest": "demo.json",
+  "methods": {
+    "ping": {
+      "params": "schema/ping-req.json",
+      "result": "schema/ping.json"
+    },
+    "prepare": {
+      "params": "schema/prepare-req.json",
+      "result": "schema/prepared.json",
+      "requiresCapability": "alpha",
+      "deadlineField": "deadlineMs"
+    },
+    "ready": {
+      "result": "schema/ready-resp.json",
+      "requiresCapability": "alpha"
+    }
+  },
+  "capabilities": {
+    "alpha": {
+      "ifAbsent": "the host never calls prepare, and reports that it skipped the behavior"
+    }
+  },
+  "loss": {
+    "mapping": {
+      "spawn": "no demo plugin is running",
+      "eof": "no finding",
+      "exited": "no finding",
+      "killed": "inconclusive",
+      "noAnswer": "inconclusive"
+    }
+  },
+  "conformance": {
+    "suite": ["/bin/sh", "fixtures/suite.sh"],
+    "deadlineMs": 700,
+    "rules": [
+      {
+        "id": "ping-schema",
+        "expectation": "ping answers an instance of its committed result schema.",
+        "defect": {
+          "run": ["/bin/sh", "fixtures/demo.sh"],
+          "env": ["DEMO_DEFECT=ping"],
+          "expectViolation": ["ping-schema"]
+        }
+      },
+      {
+        "id": "prepare-after-ping",
+        "expectation": "prepare reports the same subject ping answered, by the id ping named.",
+        "dependsOn": ["ping-schema"],
+        "defect": {
+          "unverified": "the reference plugin cannot answer prepare with a foreign id, because its script is deserialized into the profile's own types."
+        }
+      }
+    ]
+  }
+}

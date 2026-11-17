@@ -34,12 +34,13 @@ jobs:
       - name: Tests
         run: cargo test --workspace
 
-  # The other half of the parity gate. A plugin author in another language implements against
-  # `spec/schema/prpc-1/` and tests against the Rust types, and nothing generates the schemas,
-  # because `uniqueItems` and `pattern` are beyond what the derive can emit. Both halves read the
-  # one table at `crates/plugin-rpc/tests/messages.json`: the Rust test runs in the job above, and
-  # this job asks the committed schemas the same questions.
-  envelope-schemas:
+  # The other half of the parity gate, for both committed schemas. A plugin author in another
+  # language implements against `spec/schema/prpc-1/` and tests against the Rust types, and nothing
+  # generates the schemas, because `uniqueItems` and `pattern` are beyond what the derive can emit.
+  # Each pair reads one table: the envelopes read `crates/plugin-rpc/tests/messages.json` and the
+  # profile spec reads `crates/plugin-rpc-conformance/tests/profile_cases.json`. The Rust half of
+  # each table runs in the job above; this job asks the committed schemas the same questions.
+  committed-schemas:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +53,7 @@ jobs:
         run: |
           pip install --quiet jsonschema
           python3 scripts/check_envelope_schemas.py
+          python3 scripts/check_profile_schema.py
 
   # crates.io will not remove a published version, only yank it, and a yanked version still
   # resolves when asked for exactly. So the tag, not a person, decides the version, and this job
@@ -79,4 +81,9 @@ jobs:
       - name: Publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish -p plugin-rpc
+        run: |
+          set -eu
+          # The reference runner depends on the reference types by version, so the types have to be
+          # on the registry before the runner can resolve them.
+          cargo publish -p plugin-rpc
+          cargo publish -p plugin-rpc-conformance

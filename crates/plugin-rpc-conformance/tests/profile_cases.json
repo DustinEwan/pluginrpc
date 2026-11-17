@@ -1,0 +1,1195 @@
+{
+  "description": "The same table drives crates/plugin-rpc-conformance/tests/profile_spec.rs (the reference loader) and scripts/check_profile_schema.py (the committed meta-schema). A rule the meta-schema enforces and the loader does not shows up there; a rule the loader enforces and the meta-schema does not shows up here.",
+  "cases": [
+    {
+      "name": "demo-ok",
+      "expect": "accept",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "mechanism-prpc-2",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/2",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "version-not-a-revision",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "AFZ_1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "version-no-slash",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "method-handshake-declared",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          },
+          "handshake": {
+            "result": "h.json"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "method-camel-case",
+      "expect": "accept",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "method-no-params",
+      "expect": "accept",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "method-unknown-field",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json",
+            "title": "ping"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "capability-empty",
+      "expect": "accept",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {},
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "loss-reason-unmapped",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "loss-added-duplicate",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          },
+          "added": [
+            "stalled",
+            "stalled"
+          ]
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rule-without-defect",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema."
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rule-unverified-stated",
+      "expect": "accept",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "defect-without-expectation",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "defect-empty-argv",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "suite-as-a-word",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": "suite.sh",
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unknown-top-level-field",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ]
+        },
+        "extra": 1
+      }
+    },
+    {
+      "name": "deadline-zero",
+      "expect": "reject",
+      "document": {
+        "mechanism": "prpc/1",
+        "protocolVersion": "demo/1",
+        "manifest": "demo.json",
+        "methods": {
+          "ping": {
+            "params": "schema/ping-req.json",
+            "result": "schema/ping.json"
+          },
+          "coverageMap": {
+            "result": "schema/coverage.json",
+            "requiresCapability": "sideEffects"
+          }
+        },
+        "capabilities": {
+          "sideEffects": {
+            "ifAbsent": "the host applies no side-effect policy"
+          }
+        },
+        "loss": {
+          "mapping": {
+            "spawn": "none",
+            "eof": "none",
+            "exited": "none",
+            "killed": "none",
+            "noAnswer": "none"
+          }
+        },
+        "conformance": {
+          "suite": [
+            "/bin/sh",
+            "suite.sh"
+          ],
+          "rules": [
+            {
+              "id": "ping-schema",
+              "expectation": "ping answers its schema.",
+              "defect": {
+                "run": [
+                  "/bin/sh",
+                  "plugin.sh"
+                ],
+                "env": [
+                  "DEMO=1"
+                ],
+                "expectViolation": [
+                  "ping-schema"
+                ]
+              }
+            },
+            {
+              "id": "ping-twice",
+              "expectation": "ping twice answers the same.",
+              "dependsOn": [
+                "ping-schema"
+              ],
+              "defect": {
+                "unverified": "the reference plugin cannot answer twice differently."
+              }
+            }
+          ],
+          "deadlineMs": 0
+        }
+      }
+    }
+  ]
+}
