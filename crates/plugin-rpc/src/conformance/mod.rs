@@ -755,6 +755,9 @@ pub enum DefectRun {
     Silent { missing: Vec<String> },
     /// The defect's own run could not be carried out, which says nothing about the plugin.
     Failed { detail: String },
+    /// The defect names a plugin other than the one this run is testing, so its outcome belongs to
+    /// the profile's own run and says nothing about this plugin.
+    OtherPlugin,
 }
 
 /// Run one rule's scripted defect and report what it showed (§12 item 4).
@@ -767,6 +770,11 @@ pub enum DefectRun {
 /// Rules the profile did not name may report violations beside the named ones; a defect usually
 /// breaks a neighbour on its way to the rule it targets. §12 item 4 asks whether the named rules
 /// fail, not whether the rest of the protocol held while they did.
+///
+/// A defect names the plugin it was written against, and a profile's reference plugin is usually
+/// not the plugin being tested: a harness checkout has no copy of the engine's test plugin. The
+/// defect is then the profile's claim, proved where that plugin is built, and this run leaves the
+/// rule's mark as the profile states it rather than calling it unverified for want of a binary.
 pub fn run_defect(
     rule: &Rule,
     profile: &ProfileSpec,
@@ -783,6 +791,9 @@ pub fn run_defect(
     else {
         return DefectRun::NotScripted;
     };
+    if !same_program(run, &manifest.command) {
+        return DefectRun::OtherPlugin;
+    }
     let mut defect_env = base.env.clone();
     for pair in env {
         if let Some((key, value)) = pair.split_once('=') {
@@ -828,6 +839,20 @@ pub fn run_defect(
     } else {
         DefectRun::Silent { missing }
     }
+}
+
+/// Whether two argvs start the same program, judged element by element beside the working
+/// directory. A manifest may name its plugin by absolute path while the profile names the same
+/// binary relatively, and those are the same plugin; two plugins behind the same interpreter
+/// (`/bin/sh demo.sh`, `/bin/sh other.sh`) are not, because the script is the plugin.
+fn same_program(defect: &[String], command: &[String]) -> bool {
+    defect.len() == command.len()
+        && defect.iter().zip(command).all(|(defect, command)| {
+            match (std::path::absolute(defect), std::path::absolute(command)) {
+                (Ok(defect), Ok(command)) => defect == command,
+                _ => defect == command,
+            }
+        })
 }
 
 fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<(), SuiteError> {

@@ -104,6 +104,7 @@ fn main() -> ExitCode {
         // done, so this does the run. A rule whose defect does not fire is reported as unverified,
         // the same mark a profile gets for admitting it has no defect, because a pass on it is
         // not proof that the rule can detect the failure it targets.
+        let mut foreign = 0usize;
         for rule in &profile.conformance.rules {
             // The suite reports a scripted rule as verified on the profile's word alone, so this
             // is where the word is either made good or taken back.
@@ -118,6 +119,7 @@ fn main() -> ExitCode {
                     }
                 }
                 DefectRun::NotScripted => {}
+                DefectRun::OtherPlugin => foreign += 1,
                 DefectRun::Silent { missing } => {
                     eprintln!(
                         "note  {}: its scripted defect left {} still passing",
@@ -138,6 +140,12 @@ fn main() -> ExitCode {
                     }
                 }
             }
+        }
+        if foreign > 0 {
+            eprintln!(
+                "note  {foreign} rules' defects name the profile's own reference plugin rather than \
+                 this one; their verified marks were proved where that plugin is built"
+            );
         }
     }
     print!("{}", report.render());

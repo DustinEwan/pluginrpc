@@ -139,3 +139,8 @@ anybody can check rather than a sentence about a run nobody did.
 The defect run is what makes §12 item 4 mean anything to a reader of a report: a rule whose defect
 left the rules it names still passing keeps the `unverified` mark a profile gets for admitting it
 has no defect, and the run prints which rules those were.
+
+A defect names the plugin it was written against. When the plugin under test is a different
+program — a harness checkout has no copy of the engine's test plugin — the runner says so once and
+leaves the rule's mark as the profile states it, because that proof belongs to the profile's own
+run and is not this run's to take back.

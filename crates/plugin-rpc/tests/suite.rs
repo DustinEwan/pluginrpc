@@ -201,6 +201,22 @@ fn a_scripted_defect_is_run_and_what_it_fired_is_what_the_rule_is_worth() {
         },
         "a correct plugin fires nothing, so the claim is not proof: {silent:?}"
     );
+
+    // The same defect, against a manifest whose plugin is a different program: the claim belongs
+    // to the profile's own run, and this run neither proves it nor takes the mark back.
+    let other = Manifest {
+        command: vec!["/bin/sh".to_string(), "tests/fixtures/other.sh".to_string()],
+        ..demo_manifest()
+    };
+    let foreign = run_defect(
+        &spec.conformance.rules[0],
+        &spec,
+        &other,
+        &fixtures(),
+        &out_dir("defect-other-plugin"),
+        &base(&spec),
+    );
+    assert_eq!(foreign, DefectRun::OtherPlugin, "{foreign:?}");
 }
 
 /// Copy the fixture schemas under `into/schema`, so a profile spec written into a temporary
