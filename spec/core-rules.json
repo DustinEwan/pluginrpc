@@ -1,6 +1,6 @@
 {
   "revision": "prpc/1",
-  "description": "The conformance rules every profile inherits. A suite drives them in this order. Profiles add rules beside these and never remove one. Every rule must have a scripted defect in the profile's test suite that makes exactly that rule fire.",
+  "description": "The conformance rules every profile inherits. A suite runs them in this order. Profiles add rules beside these and never remove one. Every rule must have a scripted defect in the profile's test suite that makes exactly that rule report a violation.",
   "rules": [
     {
       "id": "spawn",
@@ -8,7 +8,7 @@
     },
     {
       "id": "protocol-version",
-      "expectation": "The handshake names a protocolVersion the host speaks; anything else is refused before any other method is called."
+      "expectation": "The handshake's protocolVersion names a profile the host supports; anything else is refused before any other method is called."
     },
     {
       "id": "handshake-schema",
@@ -20,11 +20,11 @@
     },
     {
       "id": "framing-intact",
-      "expectation": "A malformed line receives a -32700 frame rather than silence, and the next well-formed request is still answered."
+      "expectation": "A malformed line receives a -32700 frame instead of no answer, and the next well-formed request is still answered."
     },
     {
       "id": "process-alive",
-      "expectation": "After every other rule has been driven, the plugin is still running and still answers handshake."
+      "expectation": "After every other rule has been run, the plugin is still running and still answers handshake."
     }
   ]
 }
