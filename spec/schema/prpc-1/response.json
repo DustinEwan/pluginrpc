@@ -2,14 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://pluginrpc.dev/spec/prpc-1/response.json",
   "title": "Response",
-  "description": "One response from the plugin, discriminated by result or error, with exactly one present. The result schema belongs to the profile.",
+  "description": "One response from the plugin, discriminated by result or error, with exactly one present. A response carrying both is malformed: the plugin assigned a result and then failed, and reading the result would report success while discarding the failure. The envelope is open, so a profile may declare fields beside these and checks them in its own schema. The result schema belongs to the profile.",
   "type": "object",
   "$defs": {
-    "id": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+    "id": {
+      "description": "The id of the request being answered. 0 is reserved for a refusal whose request id the plugin could not determine.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
   },
   "oneOf": [
     {
-      "title": "Success",
+      "title": "Result",
       "type": "object",
       "required": ["jsonrpc", "id", "result"],
       "not": { "required": ["error"] },
@@ -17,11 +22,10 @@
         "jsonrpc": { "const": "2.0" },
         "id": { "$ref": "#/$defs/id" },
         "result": {}
-      },
-      "additionalProperties": false
+      }
     },
     {
-      "title": "Failure",
+      "title": "Refusal",
       "type": "object",
       "required": ["jsonrpc", "id", "error"],
       "not": { "required": ["result"] },
@@ -29,17 +33,16 @@
         "jsonrpc": { "const": "2.0" },
         "id": { "$ref": "#/$defs/id" },
         "error": {
+          "description": "A refusal: the plugin was reachable and reported that it could not do the work. A refusal is an answer, not a loss.",
           "type": "object",
           "required": ["code", "message"],
-          "additionalProperties": false,
           "properties": {
             "code": { "type": "integer" },
             "message": { "type": "string" },
             "data": {}
           }
         }
-      },
-      "additionalProperties": false
+      }
     }
   ]
 }

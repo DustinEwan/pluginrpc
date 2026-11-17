@@ -4,6 +4,13 @@ description = "Reference implementation of the pluginrpc wire mechanism: line-de
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
+repository = "https://github.com/DustinEwan/pluginrpc"
+homepage = "https://github.com/DustinEwan/pluginrpc"
+documentation = "https://docs.rs/plugin-rpc"
+readme = "../../README.md"
+keywords = ["json-rpc", "plugin", "ipc", "stdio"]
+categories = ["api-bindings", "encoding"]
 
 [dependencies]
 serde.workspace = true

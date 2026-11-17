@@ -16,11 +16,11 @@
     },
     {
       "id": "unknown-method",
-      "expectation": "A request whose method is not in the profile receives a -32601 frame carrying the request's id, and the connection continues."
+      "expectation": "A request whose method is not in the profile receives a refusal carrying code -32601 and the request's id, and the connection continues."
     },
     {
       "id": "framing-intact",
-      "expectation": "A malformed line receives a -32700 frame instead of no answer, and the next well-formed request is still answered."
+      "expectation": "A malformed request receives a refusal carrying code -32700 instead of no answer; the refusal carries id 0 when the plugin cannot determine the request's id; the next well-formed request is still answered."
     },
     {
       "id": "process-alive",
