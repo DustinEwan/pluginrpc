@@ -1,0 +1,30 @@
+{
+  "revision": "prpc/1",
+  "description": "The conformance rules every profile inherits. A suite drives them in this order. Profiles add rules beside these and never remove one. Every rule must have a scripted defect in the profile's test suite that makes exactly that rule fire.",
+  "rules": [
+    {
+      "id": "spawn",
+      "expectation": "The manifest's command starts the plugin and its stdout accepts a request."
+    },
+    {
+      "id": "protocol-version",
+      "expectation": "The handshake names a protocolVersion the host speaks; anything else is refused before any other method is called."
+    },
+    {
+      "id": "handshake-schema",
+      "expectation": "The handshake response is an instance of the committed envelope schema, profile fields included."
+    },
+    {
+      "id": "unknown-method",
+      "expectation": "A request whose method is not in the profile receives a -32601 frame carrying the request's id, and the connection continues."
+    },
+    {
+      "id": "framing-intact",
+      "expectation": "A malformed line receives a -32700 frame rather than silence, and the next well-formed request is still answered."
+    },
+    {
+      "id": "process-alive",
+      "expectation": "After every other rule has been driven, the plugin is still running and still answers handshake."
+    }
+  ]
+}
