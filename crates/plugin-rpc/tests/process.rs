@@ -50,6 +50,11 @@ fn say(message: &str) -> String {
     format!("printf '%s\\n' '{message}'; ")
 }
 
+/// A handshake carrying the fields a profile adds beside the core four. autofuzz adds
+/// `targetClass` and `languages`; veridoc adds `languages`. The mechanism must deliver those to
+/// the host and not drop them on the floor.
+const HANDSHAKE_WITH_PROFILE_FIELDS: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"demo/1","name":"fake","version":"0.1.0","capabilities":["alpha"],"targetClass":"libfuzzer","languages":["c"],"discoverRequiresExecution":true}}"#;
+
 fn plugin(script: &str) -> PluginConfig {
     PluginConfig::new(["/bin/sh", "-c", script])
 }
@@ -275,4 +280,36 @@ fn typed_params_reach_the_wire_under_the_profiles_own_names() {
         echoed.contains(r#""method":"work""#),
         "the request named the profile's method: {echoed}"
     );
+}
+
+#[test]
+fn the_handshake_carries_the_profile_fields_beside_the_four_the_mechanism_reads() {
+    // §5 makes the envelope open, so a profile's fields are already in the one `handshake` answer.
+    // A host that has to send `handshake` twice to learn its own profile is reading the mechanism
+    // wrong, and both hosts did exactly that before `Handshake::result` existed.
+    let (plugin, handshake) = start(&format!(
+        "{ASKED}{}sleep 5",
+        say(HANDSHAKE_WITH_PROFILE_FIELDS)
+    ));
+    assert_eq!(
+        handshake.protocol_version, "demo/1",
+        "the mechanism still read the core fields it owns"
+    );
+    assert_eq!(
+        handshake.result["targetClass"], "libfuzzer",
+        "the profile's own field reached the host: {}",
+        handshake.result
+    );
+    assert_eq!(handshake.result["discoverRequiresExecution"], true);
+    assert!(
+        plugin.lost().is_none(),
+        "fields the mechanism does not name are not a protocol violation"
+    );
+
+    let serialized = serde_json::to_value(&handshake).expect("a handshake serializes");
+    assert!(
+        serialized.get("result").is_none(),
+        "`result` is not a wire field, so it is never re-sent nested: {serialized}"
+    );
+    assert_eq!(serialized["capabilities"], serde_json::json!(["alpha"]));
 }

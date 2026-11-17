@@ -30,6 +30,7 @@ use serde_json::Value;
 use crate::{
     buffered, buffered_writer, parse_response, read_line, write_line, Call, ErrorObject, Handshake,
     Loss, MessageError, MethodName, Request, Response, MIN_HOST_ID, UNCORRELATED_ID,
+    UNUSABLE_RESULT,
 };
 
 #[cfg(unix)]
@@ -200,15 +201,28 @@ impl Plugin {
     ///
     /// Whether the declared `protocolVersion` is one this host speaks is the host's rule and not
     /// the mechanism's, so the handshake comes back for the host to check before its first call.
+    /// The fields the profile added beside the core four come back on it too, in
+    /// [`Handshake::result`], so a host reads them from the answer it already holds instead of
+    /// asking the plugin a second time.
     pub fn start(config: &PluginConfig) -> Result<(Plugin, Handshake), StartError> {
         let plugin = Plugin::spawn(config)?;
-        let call: Call<Handshake> = plugin.request(
+        let call: Call<Value> = plugin.request(
             HandshakeMethod::Handshake,
             None,
             config.timeouts.handshake_timeout,
         );
         match call {
-            Call::Result(handshake) => Ok((plugin, handshake)),
+            Call::Result(result) => {
+                // The core four are the mechanism's rule, so the mechanism checks them; the rest
+                // of the object is the profile's and travels to the host untouched (spec §5).
+                let mut handshake: Handshake =
+                    serde_json::from_value(result.clone()).map_err(|e| Loss::Profile {
+                        reason: UNUSABLE_RESULT.to_string(),
+                        detail: e.to_string(),
+                    })?;
+                handshake.result = result;
+                Ok((plugin, handshake))
+            }
             Call::Refusal(error) => Err(StartError::Refused(error)),
             Call::Lost(loss) => Err(StartError::Lost(loss)),
         }

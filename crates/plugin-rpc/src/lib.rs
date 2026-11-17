@@ -317,11 +317,12 @@ impl<T> Call<T> {
     }
 }
 
-/// The four core fields of a handshake response (spec §6). The object is open on purpose:
-/// a profile adds top-level fields, serde ignores what it does not name, and the committed
-/// envelope schema allows them, so a profile evolves its handshake without a mechanism
-/// revision.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+/// The core fields of a handshake response (spec §6), and the whole `result` object the plugin
+/// sent. The object is open on purpose: a profile adds top-level fields, and the committed envelope
+/// schema allows them, so a profile evolves its handshake without a mechanism revision. The
+/// mechanism reads only the four fields below; the fields a profile adds reach the host through
+/// [`Handshake::result`].
+#[derive(Debug, Clone, PartialEq, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Handshake {
     pub protocol_version: String,
@@ -329,6 +330,14 @@ pub struct Handshake {
     pub version: String,
     /// Opaque capability strings from the profile's vocabulary (spec §7).
     pub capabilities: Vec<String>,
+    /// The `result` object exactly as the plugin sent it, the four fields above included. A profile
+    /// deserializes its own handshake type from this instead of asking the plugin a second time:
+    /// `handshake` is one request, and a host that has to send it twice to learn its own profile
+    /// fields is reading the mechanism wrong. It is not a wire field — `skip` keeps a serialized
+    /// `Handshake` to the four the mechanism owns (spec §5) — so a `Handshake` you build yourself
+    /// carries [`Value::Null`] here, and only [`crate::process::Plugin::start`] fills it.
+    #[serde(skip, default)]
+    pub result: Value,
 }
 
 /// The two constraints `handshake.json` places on the core fields are checked here so the
@@ -373,6 +382,7 @@ impl<'de> Deserialize<'de> for Handshake {
             name: wire.name,
             version: wire.version,
             capabilities: wire.capabilities,
+            result: Value::Null,
         })
     }
 }

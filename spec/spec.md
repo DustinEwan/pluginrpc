@@ -165,8 +165,11 @@ The handshake response carries four core fields:
 ```
 
 The handshake object is open: a profile adds its own top-level fields, and the committed schema
-(`handshake.json`) allows them. The host reads only the four core fields. An open envelope lets
-a profile change its handshake within its own revision, and each profile sets field strictness
+(`handshake.json`) allows them. The host reads only the four core fields, and the mechanism hands
+it the whole response object as well, because the fields beside the four belong to the host's own
+profile: `handshake` is one request, and a host forced to send it a second time to learn its own
+fields pays a process round trip to read what the first answer already carried. An open envelope
+lets a profile change its handshake within its own revision, and each profile sets field strictness
 in its own schema.
 
 The connection stays open while work remains, and the host may keep several requests waiting

@@ -39,7 +39,7 @@ rule.
 ## Reference implementation
 
 The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`.
-Its 30 tests assert the wire contract exactly as a plugin written in any other language must
+Its 31 tests assert the wire contract exactly as a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,
 blank-line loss, the open envelope, the reserved id 0, and the two rules the types enforce
@@ -64,13 +64,17 @@ ordering both a restart and a report depend on.
 `plugin_rpc::process` is the one part of the crate that is not medium-neutral. `Plugin::start`
 takes a `PluginConfig` (the command, the environment, the directory, and the two `Timeouts`),
 starts the process, and sends the handshake, because §6 makes the handshake the first request and
-a host that forgets that rule can call a plugin whose profile it never read. `Plugin::request` and
-`Plugin::call` return `Call<T>`. The handle owns the process: it drains stderr, which §3 requires
-because a pipe nobody reads stops the plugin, it records `Loss::Killed` before it asks for a kill
-so an in-flight call is attributed to the host rather than to the exit status that kill produced,
-and it ends the plugin on drop unless `detach` said otherwise. The 12 tests in
+a host that forgets that rule can call a plugin whose profile it never read. `Plugin::start` hands
+back the whole handshake answer in `Handshake::result`, so the fields a profile adds beside the
+four core ones reach the host without a second `handshake` request.
+`Plugin::request` and `Plugin::call` return `Call<T>`. The handle owns the process: it drains
+stderr, which §3 requires, because a pipe nobody reads stops the plugin, it records
+`Loss::Killed` before it asks for a kill so an in-flight call is attributed to the host rather
+than to the exit status that kill produced, and it ends the plugin on drop unless `detach` said
+otherwise. The 13 tests in
 `tests/process.rs` start real child processes, so they cover a plugin that dies mid-call, refuses,
-stays silent, writes to stderr, and answers with an `id` 0 refusal.
+stays silent, writes to stderr, answers with an `id` 0 refusal, and carries profile fields in the
+handshake.
 
 The two timings the plugin controls are mechanism constants rather than configuration: how long a
 call waits for the process's exit status before it stops reporting a closed pipe as the cause, and
