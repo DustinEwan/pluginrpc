@@ -2,8 +2,8 @@
 
 This document gives the normative rules for a host program that delegates work to an
 out-of-process plugin. It defines how messages travel, how a connection starts and ends, and
-how a plugin proves it speaks its profile. It does not define what any plugin does: a profile
-names its methods and payloads, and the mechanism never reads them. Where a rule exists to
+how a plugin proves it speaks its profile. A profile names the methods and the payloads, and
+the mechanism transports them with their meaning left to the profile. Where a rule exists to
 stop a specific failure, the failure sits next to it.
 
 ## 1. Layering
@@ -11,9 +11,8 @@ stop a specific failure, the failure sits next to it.
 The mechanism owns the pipe: framing, ids, error codes, the handshake envelope, capability
 strings, deadlines, loss, and the conformance procedure. A profile owns the content: its method
 set, the payload types behind those methods, the JSON Schemas that describe them, its
-capability vocabulary, and its conformance rules. Nothing in this document names a method
-other than `handshake`, and `handshake` carries no payload a host interprets beyond the four
-envelope fields in §5.
+capability vocabulary, and its conformance rules. The mechanism's own vocabulary is the one
+method name `handshake`, and the host interprets four envelope fields (§5) from its payload.
 
 A profile is identified by its `protocolVersion` string (§5), which plays the role a port
 number plays for TCP: it says which upper-layer protocol the bytes belong to. The host refuses
@@ -23,17 +22,16 @@ string without this document changing.
 ## 2. Transport and framing
 
 The host starts the plugin from an argv array with pipes on stdin and stdout. The plugin reads
-requests from stdin and writes responses to stdout. stderr is the plugin's for logging; the
-mechanism gives it no meaning.
+requests from stdin and writes responses to stdout. stderr stays the plugin's own channel for
+logging.
 
 - Each message is one UTF-8 encoded JSON value on one line, terminated by `\n`. A trailing `\r`
   before the `\n` is stripped.
-- A blank line or an end-of-file on either pipe means the connection is lost (§7). It is never
-  a protocol error: a plugin that closes its stdout has died or left, and inventing an error
-  frame for it would blame the peer for the pipe.
-- Every request carries an `id`. Notifications and batching are not part of the mechanism,
-  because a host that cannot match an answer to a question cannot tell a lost plugin from a
-  silent one.
+- A blank line or an end-of-file on either pipe means the connection is lost (§7): a plugin
+  that closes its stdout has died or left, and the host records the event as the end of the
+  connection.
+- Every request carries an `id` and receives exactly one response, because a host that cannot
+  match an answer to a question cannot tell a lost plugin from a silent one.
 
 ## 3. Requests and responses
 
@@ -48,10 +46,9 @@ disagree about a request nobody described.
 
 A response is `{"jsonrpc":"2.0","id":<id>,"result":<value>}` or
 `{"jsonrpc":"2.0","id":<id>,"error":{"code":<int>,"message":<string>,"data":<value>}}`, with
-exactly one of `result` or `error` present. A response whose `id` matches no in-flight request
-is discarded, not an error: a late answer to a request the host already timed out is a normal
-consequence of deadlines, and killing the connection over it would turn a slow plugin into a
-failed run.
+exactly one of `result` or `error` present. The host discards a response whose `id` matches no
+in-flight request: a late answer to a request the host already timed out is a normal
+consequence of deadlines, and the connection stays open.
 
 The shape of `params` and `result` belongs to the profile. The mechanism requires only that
 both are JSON values.
@@ -66,10 +63,9 @@ both are JSON values.
 | -32000 | plugin error | The plugin failed while answering. |
 
 Codes -32099 through -32001 are reserved for profiles. A profile that needs more error detail
-than `PLUGIN_ERROR` carries puts a typed reason in `error.data` or, better, in the `result` of
-the method: a domain failure (the symbol does not exist, the input cannot be built) is an
-answer, not a transport error, and treating it as one would make every domain failure look
-like a broken pipe.
+than `PLUGIN_ERROR` puts a typed reason in `error.data` or, better, in the `result` of the
+method: a domain failure (the symbol does not exist, the input cannot be built) travels as an
+answer, so a broken pipe keeps its signal value.
 
 ## 5. Lifecycle
 
@@ -90,29 +86,27 @@ The handshake response carries four core fields:
 ```
 
 The handshake object is open: a profile adds its own top-level fields, and the committed schema
-(`handshake.json`) allows them. The host reads only the four core fields. An open envelope is
-what lets a profile evolve its handshake without a mechanism revision, and it keeps field
-strictness a decision each profile makes in its own schema rather than one the mechanism
-imposes.
+(`handshake.json`) allows them. The host reads only the four core fields. An open envelope lets
+a profile evolve its handshake inside its own revision, and each profile sets field strictness
+in its own schema.
 
 The connection stays open for the life of the work, and the host may keep several requests in
-flight. Whether the host runs one connection or a pool of plugin processes is host policy, not
-mechanism.
+flight. The host decides between one connection and a pool of plugin processes as host policy.
 
 ## 6. Capabilities
 
 `capabilities` is an array of strings the plugin declares it can answer, drawn from the
 profile's vocabulary. The mechanism requires one property: a declared capability must be
 answerable — for every capability the handshake declares, the methods it names must respond to
-well-formed requests during the connection. A missing capability is never a failure and never
-silently a pass: the profile fixes what the host does without it, and the host reports what it
-skipped. The mechanism attaches no meaning to any capability string.
+well-formed requests during the connection. When a capability is absent, the host follows the
+behavior the profile fixes for that absence and reports what it skipped. The mechanism treats
+every capability string as opaque.
 
 ## 7. Loss
 
 A plugin that closes its stdout, exits, or stops answering within the deadline it was given has
-produced a *loss*, not an error frame. The host records the reason (no answer, closed pipe,
-process exit, engine kill) and stops using the connection. What a loss means for the work — a
+produced a *loss*. The host records the reason (no answer, closed pipe, process exit, engine
+kill) and stops using the connection. What a loss means for the work — a
 skipped test case, a failed check, a retried call — belongs to the profile, because only the
 profile knows what was in flight.
 
@@ -120,9 +114,7 @@ profile knows what was in flight.
 
 A request that triggers work MAY carry `deadlineMs` in its params. The plugin SHOULD finish or
 return before the deadline; the host MAY kill the plugin or retire the connection when the
-deadline passes. The kill mechanism and any grace period are host policy. A plugin that needs
-more time than a deadline allows is a profile-level mismatch, not something the plugin
-negotiates on the wire.
+deadline passes. The kill mechanism and any grace period are host policy.
 
 ## 9. What a profile must define
 
@@ -138,7 +130,7 @@ A profile is complete when it names:
 
 A profile MAY set `additionalProperties: false` on its own payload schemas when it wants strict
 field checking. Strictness lives in the schemas, because the schema is the contract that
-conformance validates; host and plugin deserializers add no policy of their own on top of it.
+conformance validates, and deserializers enforce exactly what the schema states.
 
 ## 10. Plugin manifest
 
@@ -160,7 +152,8 @@ mechanism's:
 
 `install` holds slow, once-per-checkout steps, and only installation runs them. `build`
 compiles the plugin and the emitter, and both installation and validation run it, so a
-validation never tests a stale build. `command` is the plugin's argv; the host appends nothing.
+validation never tests a stale build. `command` is the plugin's argv, which the host runs
+verbatim.
 `conformance` is described in §11.
 
 ## 11. Conformance
@@ -170,24 +163,23 @@ mechanism fixes the procedure:
 
 1. The plugin's manifest names a conformance **emitter**, a program the suite runs as
    `<argv> --out <dir>`. The emitter renders a fixture project and writes a manifest naming
-   every subject the suite must drive. The emitter never decides pass or fail, and the suite
-   reads no source the target language owns: every subject is named in the fixture manifest or
-   came from the plugin's own answers. This is what stops an empty fixture from passing
-   silently.
+   every subject the suite must drive. The suite judges what it observes over the protocol,
+   and every subject is named in the fixture manifest or answered by the plugin itself, which
+   is what stops an empty fixture from passing silently.
 2. The suite validates every response against the profile's committed schema **before**
    deserializing it. A plugin that drifts from the published contract then hears the contract's
    own vocabulary, not a decoder's internal message, and a non-Rust plugin author is validated
    by the same artifact they wrote code against.
 3. Rules the suite could not evaluate — the plugin did not declare the capability, an earlier
-   rule ended the run — are counted as not applicable and never shown as passes.
+   rule ended the run — are counted as not applicable, kept apart from the passes in the
+   report.
 4. A rule must be falsifiable: the profile's test suite scripts the one defect that makes each
    rule fire, and a rule with no scripted defect is unproven.
-5. A suite that cannot start its own fixture is reported as a suite error, not as a plugin
-   violation, because blaming the plugin for a broken emitter teaches authors to ignore
-   reports.
+5. A suite that cannot start its own fixture reports a suite error, because blaming the
+   plugin for a broken emitter teaches authors to ignore reports.
 
-The core rules, in the order a suite drives them, are `spec/core-rules.json`. Profiles add
-rules beside them; profiles never remove a core rule.
+The core rules, in the order a suite drives them, are `spec/core-rules.json`. A profile
+extends that list with its own rules.
 
 ## 12. Versioning
 
