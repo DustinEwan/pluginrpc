@@ -8,6 +8,8 @@
 //! *envelope* is the fields every message carries regardless of profile, a *refusal* is a
 //! response carrying `error`, and a *loss* is the host receiving no answer.
 
+pub mod process;
+
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
 use schemars::JsonSchema;

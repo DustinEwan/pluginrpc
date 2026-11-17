@@ -34,12 +34,12 @@ rule.
 | `spec/spec.md` | The normative mechanism specification, revision `prpc/1`, opening with the glossary |
 | `spec/schema/prpc-1/` | The normative envelope schemas (JSON Schema draft 2020-12) |
 | `spec/core-rules.json` | The conformance rules every profile inherits |
-| `crates/plugin-rpc/` | Rust reference implementation of the messages, the loss reasons, and the answers; a profile implements `MethodName` |
+| `crates/plugin-rpc/` | Rust reference implementation of the messages, the loss reasons, and the answers; `src/process.rs` adds the transport for a plugin started as a child process |
 
 ## Reference implementation
 
 The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`.
-Its 13 tests assert the wire contract exactly as a plugin written in any other language must
+Its 30 tests assert the wire contract exactly as a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,
 blank-line loss, the open envelope, the reserved id 0, and the two rules the types enforce
@@ -60,3 +60,20 @@ reason `UNUSABLE_RESULT`, not a refusal. `Loss` holds the five reasons a host re
 plus `Loss::Profile` for a case the mechanism cannot name. `Loss::resolve` keeps the first cause
 when two arrive together and lets a later reason replace only `eof` or `no answer`, which is the
 ordering both a restart and a report depend on.
+
+`plugin_rpc::process` is the one part of the crate that is not medium-neutral. `Plugin::start`
+takes a `PluginConfig` (the command, the environment, the directory, and the two `Timeouts`),
+starts the process, and sends the handshake, because §6 makes the handshake the first request and
+a host that forgets that rule can call a plugin whose profile it never read. `Plugin::request` and
+`Plugin::call` return `Call<T>`. The handle owns the process: it drains stderr, which §3 requires
+because a pipe nobody reads stops the plugin, it records `Loss::Killed` before it asks for a kill
+so an in-flight call is attributed to the host rather than to the exit status that kill produced,
+and it ends the plugin on drop unless `detach` said otherwise. The 12 tests in
+`tests/process.rs` start real child processes, so they cover a plugin that dies mid-call, refuses,
+stays silent, writes to stderr, and answers with an `id` 0 refusal.
+
+The two timings the plugin controls are mechanism constants rather than configuration: how long a
+call waits for the process's exit status before it stops reporting a closed pipe as the cause, and
+how long `kill` blocks for the process to be gone. `Timeouts::plugin_deadline` turns a host's own
+wait into the `deadlineMs` the plugin is told, so §9's rule is written once instead of at every
+call site.
