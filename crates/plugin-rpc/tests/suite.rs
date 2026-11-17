@@ -2,8 +2,12 @@
 //! requires back. `plugin_rpc::conformance::run_suite` is the reference driver, and these tests are
 //! the first thing that ever ran it.
 
-use plugin_rpc::conformance::{run_suite, Manifest, Outcome, ProfileSpec, SuiteError};
+use plugin_rpc::conformance::{
+    core::CoreCheck, run_defect, run_suite, Defect, DefectRun, Manifest, Outcome, ProfileSpec,
+    SuiteError,
+};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -48,7 +52,7 @@ fn out_dir(name: &str) -> PathBuf {
 #[test]
 fn the_suite_is_handed_the_schemas_the_profile_spec_names() {
     let out = out_dir("suite-clean");
-    let report = run_suite(&demo_spec(), &demo_manifest(), &fixtures(), &out)
+    let report = run_suite(&demo_spec(), &demo_manifest(), &fixtures(), &out, &[])
         .expect("the demo suite reports both rules");
 
     // The suite program reads `schema/ping.json` out of the directory it was given and exits 2
@@ -84,6 +88,7 @@ fn the_scripted_defect_a_profile_declares_makes_its_own_rule_report_a_violation(
         &demo_manifest(),
         &fixtures(),
         &out,
+        &[],
     )
     .expect("the demo suite reports both rules");
 
@@ -126,6 +131,7 @@ fn a_rule_the_suite_did_not_report_is_an_error_and_never_a_pass() {
         &demo_manifest(),
         &fixtures(),
         &dir,
+        &[],
     ) {
         Ok(report) => panic!("a suite that reported one of two rules produced {report:?}"),
         Err(error) => error,
@@ -134,5 +140,65 @@ fn a_rule_the_suite_did_not_report_is_an_error_and_never_a_pass() {
     assert!(
         error.to_string().contains("prepare-after-ping"),
         "the error names the rule the suite skipped: {error}"
+    );
+}
+
+/// A base check with nothing in it but the deadline: a defect brings its own command and its own
+/// variables, and the base's environment is what the runner was given for the plugin.
+fn base(spec: &ProfileSpec) -> CoreCheck<'_> {
+    CoreCheck {
+        profile: spec,
+        command: Vec::new(),
+        env: Vec::new(),
+        cwd: None,
+        deadline: Duration::from_millis(700),
+    }
+}
+
+#[test]
+fn a_scripted_defect_is_run_and_what_it_fired_is_what_the_rule_is_worth() {
+    // §12 item 4, done rather than assumed: the mechanism starts the plugin with the defect the
+    // profile names and looks for the violation, and the same command with the defect taken out
+    // proves the report would otherwise be claiming a run nobody did.
+    let spec = demo_spec();
+    let manifest = demo_manifest();
+    let fired = run_defect(
+        &spec.conformance.rules[0],
+        &spec,
+        &manifest,
+        &fixtures(),
+        &out_dir("defect-fires"),
+        &base(&spec),
+    );
+    assert_eq!(fired, DefectRun::Fired, "{fired:?}");
+
+    let mut correct = demo_spec();
+    let Defect::Scripted {
+        run,
+        expect_violation,
+        ..
+    } = &correct.conformance.rules[0].defect
+    else {
+        panic!("the demo fixture's first rule carries a scripted defect");
+    };
+    correct.conformance.rules[0].defect = Defect::Scripted {
+        run: run.clone(),
+        env: Vec::new(),
+        expect_violation: expect_violation.clone(),
+    };
+    let silent = run_defect(
+        &correct.conformance.rules[0],
+        &correct,
+        &manifest,
+        &fixtures(),
+        &out_dir("defect-silent"),
+        &base(&correct),
+    );
+    assert_eq!(
+        silent,
+        DefectRun::Silent {
+            missing: vec!["ping-schema".to_string()]
+        },
+        "a correct plugin fires nothing, so the claim is not proof: {silent:?}"
     );
 }

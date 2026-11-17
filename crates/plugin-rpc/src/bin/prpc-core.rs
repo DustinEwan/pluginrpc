@@ -10,12 +10,18 @@
 //! the profile spec, the manifest, and the schemas the spec names into a directory, runs
 //! `<argv> --out <dir>`, and reads the verdicts back. The two halves print as one report, core
 //! rules first.
+//!
+//! With `--suite`, every rule the profile gives a scripted defect gets that defect run (§12 item
+//! 4): the plugin is started again with the defect in place, and the rule keeps its unverified
+//! mark unless the rules the defect names really do report a violation.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
 
-use plugin_rpc::conformance::{core, run_suite, CoreCheck, Manifest, ProfileSpec};
+use plugin_rpc::conformance::{
+    core, run_defect, run_suite, CoreCheck, DefectRun, Manifest, ProfileSpec,
+};
 
 const USAGE: &str = "usage: prpc-core <profile.json> <manifest.json> [--suite] [--env NAME=value] [--cwd DIR] [--deadline-ms N]";
 
@@ -75,13 +81,14 @@ fn main() -> ExitCode {
     };
     let deadline =
         Duration::from_millis(deadline_ms.unwrap_or_else(|| profile.deadline_ms(Some(&manifest))));
-    let mut report = core::run(&CoreCheck {
+    let check = CoreCheck {
         profile: &profile,
         command: manifest.command.clone(),
         env,
         cwd,
         deadline,
-    });
+    };
+    let mut report = core::run(&check);
     if suite {
         let spec_dir = PathBuf::from(&positional[0])
             .parent()
@@ -89,9 +96,36 @@ fn main() -> ExitCode {
             .unwrap_or_else(|| PathBuf::from("."));
         let out_dir = std::env::temp_dir().join(format!("prpc-suite-{}", std::process::id()));
         eprintln!("suite directory: {}", out_dir.display());
-        match run_suite(&profile, &manifest, &spec_dir, &out_dir) {
+        match run_suite(&profile, &manifest, &spec_dir, &out_dir, &check.env) {
             Ok(ran) => report.verdicts.extend(ran.verdicts),
             Err(e) => report.suite_error = Some(e.to_string()),
+        }
+        // §12 item 4: the profile's `expectViolation` is a claim about a run nobody else has
+        // done, so this does the run. A rule whose defect does not fire is reported as unverified,
+        // the same mark a profile gets for admitting it has no defect, because a pass on it is
+        // not proof that the rule can detect the failure it targets.
+        for rule in &profile.conformance.rules {
+            match run_defect(rule, &profile, &manifest, &spec_dir, &out_dir, &check) {
+                DefectRun::Fired => {
+                    if let Some(verdict) = report
+                        .verdicts
+                        .iter_mut()
+                        .find(|verdict| verdict.rule == rule.id)
+                    {
+                        verdict.unverified = false;
+                    }
+                }
+                DefectRun::NotScripted => {}
+                DefectRun::Silent { missing } => eprintln!(
+                    "note  {}: its scripted defect left {} still passing",
+                    rule.id,
+                    missing.join(", ")
+                ),
+                DefectRun::Failed { detail } => eprintln!(
+                    "note  {}: its scripted defect could not be run: {detail}",
+                    rule.id
+                ),
+            }
         }
     }
     print!("{}", report.render());

@@ -39,7 +39,7 @@ rule.
 ## Reference implementation
 
 The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`, and
-its `conformance` module implements §11 and §12. Its 50 tests assert the wire contract exactly as
+its `conformance` module implements §11 and §12. Its 51 tests assert the wire contract exactly as
 a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,
@@ -126,6 +126,16 @@ schema it cannot open, so a suite validates an answer against the file its autho
 against a path in a checkout the suite was never handed.
 
 `tests/suite.rs` drives that contract against the demo profile: the suite program opens
-`schema/ping.json` out of the directory it was given, the scripted defect the spec names makes
-`ping-schema` report a violation and no other rule, and a suite that reports one of the profile's
-two rules fails as a suite error rather than passing the rule it skipped.
+`schema/ping.json` out of the directory it was given, the scripted defect the spec names is run by
+the mechanism and makes `ping-schema` report a violation and no other rule, the same command with
+the defect removed leaves that rule unverified, and a suite that reports one of the profile's two
+rules fails as a suite error rather than passing the rule it skipped.
+
+The profile states, for each of its own rules, either the command that starts the plugin with the
+defect for that rule in place and the exact set of rules it must make fail, or a sentence saying no
+such defect exists. `--suite` runs the first kind instead of trusting it, so the field is a claim
+anybody can check rather than a sentence about a run nobody did.
+
+The defect run is what makes §12 item 4 mean anything to a reader of a report: a rule whose defect
+left the rules it names still passing keeps the `unverified` mark a profile gets for admitting it
+has no defect, and the run prints which rules those were.

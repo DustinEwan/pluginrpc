@@ -646,6 +646,7 @@ pub fn run_suite(
     manifest: &Manifest,
     spec_dir: &Path,
     out_dir: &Path,
+    env: &[(String, String)],
 ) -> Result<Report, SuiteError> {
     std::fs::create_dir_all(out_dir).map_err(|source| SuiteError::Io {
         path: out_dir.display().to_string(),
@@ -675,10 +676,14 @@ pub fn run_suite(
             detail: "the profile spec's `conformance.suite` is empty".to_string(),
         });
     };
+    // The suite program starts the plugin, so the variables the runner was given for the plugin
+    // have to reach the program too, or a scripted defect would be tested against a plugin that
+    // never saw it.
     let status = std::process::Command::new(program)
         .args(argv.iter().skip(1))
         .arg("--out")
         .arg(out_dir)
+        .envs(env.iter().cloned())
         .status()
         .map_err(|source| SuiteError::Spawn {
             program: program.clone(),
@@ -736,6 +741,93 @@ pub fn run_suite(
         }
     }
     Ok(Report::new(verdicts))
+}
+
+/// What running one rule's scripted defect showed (§12 item 4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DefectRun {
+    /// The profile states no defect for the rule, so it keeps the unverified mark.
+    NotScripted,
+    /// Every rule the defect names reported a violation, which is what makes this rule verified.
+    Fired,
+    /// The plugin answered and at least one named rule did not report a violation: the profile
+    /// claims a proof this run did not produce.
+    Silent { missing: Vec<String> },
+    /// The defect's own run could not be carried out, which says nothing about the plugin.
+    Failed { detail: String },
+}
+
+/// Run one rule's scripted defect and report what it showed (§12 item 4).
+///
+/// `expectViolation` is a claim about a run nobody has done, so this does the run: the core rules
+/// against the plugin the defect starts, then the profile's suite program against that same
+/// plugin, and the named rules looked for among the violations. A defect that names only core
+/// rules skips the suite program, because nothing it reports is asked about.
+///
+/// Rules the profile did not name may report violations beside the named ones; a defect usually
+/// breaks a neighbour on its way to the rule it targets. §12 item 4 asks whether the named rules
+/// fail, not whether the rest of the protocol held while they did.
+pub fn run_defect(
+    rule: &Rule,
+    profile: &ProfileSpec,
+    manifest: &Manifest,
+    spec_dir: &Path,
+    out_dir: &Path,
+    base: &core::CoreCheck,
+) -> DefectRun {
+    let Defect::Scripted {
+        run,
+        env,
+        expect_violation,
+    } = &rule.defect
+    else {
+        return DefectRun::NotScripted;
+    };
+    let mut defect_env = base.env.clone();
+    for pair in env {
+        if let Some((key, value)) = pair.split_once('=') {
+            defect_env.retain(|(name, _)| name != key);
+            defect_env.push((key.to_string(), value.to_string()));
+        }
+    }
+    let check = core::CoreCheck {
+        profile,
+        command: run.clone(),
+        env: defect_env.clone(),
+        cwd: base.cwd.clone(),
+        deadline: base.deadline,
+    };
+    let report = core::run(&check);
+    let core_ids: Vec<String> = core_rules().into_iter().map(|rule| rule.id).collect();
+    let mut violated: Vec<String> = report
+        .violations()
+        .iter()
+        .map(|verdict| verdict.rule.clone())
+        .collect();
+    if expect_violation.iter().any(|name| !core_ids.contains(name)) {
+        let scripted = Manifest {
+            command: run.clone(),
+            ..manifest.clone()
+        };
+        match run_suite(profile, &scripted, spec_dir, out_dir, &defect_env) {
+            Ok(ran) => violated.extend(ran.violations().iter().map(|verdict| verdict.rule.clone())),
+            Err(e) => {
+                return DefectRun::Failed {
+                    detail: e.to_string(),
+                }
+            }
+        }
+    }
+    let missing: Vec<String> = expect_violation
+        .iter()
+        .filter(|name| !violated.contains(name))
+        .cloned()
+        .collect();
+    if missing.is_empty() {
+        DefectRun::Fired
+    } else {
+        DefectRun::Silent { missing }
+    }
 }
 
 fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<(), SuiteError> {
