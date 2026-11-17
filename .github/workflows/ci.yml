@@ -31,6 +31,19 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      # `cargo publish` builds the tarball in isolation, and cargo ships only files under a package
+      # root: an `include_str!` that walks above it compiles in the workspace and fails in the
+      # tarball, after the version is permanent on the registry. Packaging here is the only check
+      # that catches that class of mistake first.
+      - name: Package
+        run: cargo package --workspace --allow-dirty
+
+      # The crate embeds the core rules from inside its own package, because cargo ships only files
+      # under a package root and `spec/` is above it, while `spec/core-rules.json` stays the
+      # normative file the specification names. They have to be the same bytes.
+      - name: The embedded core rules are the normative ones
+        run: cmp spec/core-rules.json crates/plugin-rpc/core-rules.json
+
       - name: Tests
         run: cargo test --workspace
 
@@ -38,7 +51,7 @@ jobs:
   # language implements against `spec/schema/prpc-1/` and tests against the Rust types, and nothing
   # generates the schemas, because `uniqueItems` and `pattern` are beyond what the derive can emit.
   # Each pair reads one table: the envelopes read `crates/plugin-rpc/tests/messages.json` and the
-  # profile spec reads `crates/plugin-rpc-conformance/tests/profile_cases.json`. The Rust half of
+  # profile spec reads `crates/plugin-rpc/tests/profile_cases.json`. The Rust half of
   # each table runs in the job above; this job asks the committed schemas the same questions.
   committed-schemas:
     runs-on: ubuntu-latest
@@ -83,7 +96,12 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           set -eu
-          # The reference runner depends on the reference types by version, so the types have to be
-          # on the registry before the runner can resolve them.
-          cargo publish -p plugin-rpc
-          cargo publish -p plugin-rpc-conformance
+          # A re-run of a publish that already succeeded fails on "already exists" and ships nothing,
+          # so the registry decides whether there is work here.
+          version=$(cargo metadata --no-deps --format-version 1 |
+            python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"] == "plugin-rpc"))')
+          if curl -sf -A pluginrpc-ci "https://crates.io/api/v1/crates/plugin-rpc/${version}" -o /dev/null; then
+            echo "plugin-rpc ${version} is already on the registry; nothing to publish"
+          else
+            cargo publish -p plugin-rpc
+          fi

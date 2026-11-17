@@ -9,7 +9,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use plugin_rpc_conformance::{core, core_rules, CoreCheck, Outcome, ProfileSpec, Report};
+use plugin_rpc::conformance::{core, core_rules, CoreCheck, Outcome, ProfileSpec, Report};
 
 /// The core rules, in the order `spec/core-rules.json` states them and the order the runner emits.
 const CORE: [&str; 6] = [

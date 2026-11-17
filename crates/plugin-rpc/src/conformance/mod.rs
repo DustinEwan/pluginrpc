@@ -1,7 +1,7 @@
 //! The conformance procedure of `prpc/1` (spec §12), as a reference implementation.
 //!
 //! Two halves, and they are deliberately different shapes. The **core rules** are six checks that
-//! name no method of any profile, so this crate runs them for every profile from two files: the
+//! name no method of any profile, so this module runs them for every profile from two files: the
 //! profile's own spec and the plugin's manifest. The **profile's own rules** are a program the
 //! profile ships, run under the contract of §12(6), because a profile's rules need folds across
 //! responses, cross-response comparisons, and derived inputs — arbitrary logic — and the mechanism
@@ -9,7 +9,7 @@
 //! report because both read the same two files and honour the same `verdicts.json`.
 //!
 //! The normative text is `spec/spec.md`; the doc comments cite the section each rule implements.
-//! Where this crate checks a constraint by hand rather than by running a JSON Schema validator, the
+//! Where this module checks a constraint by hand rather than by running a JSON Schema validator, the
 //! comment says which schema the check stands for, because a schema the reference types do not
 //! enforce is a schema that will drift (`crates/plugin-rpc/tests/envelope_parity.rs` is the same
 //! argument for the envelopes).
@@ -48,6 +48,10 @@ pub struct CoreRule {
 /// what a profile author reads and what a suite in any language must agree with. `PLUGIN_RPC_SPEC`
 /// points at another `spec/` directory; the embedded copy is the fallback so a published crate is
 /// self-contained.
+///
+/// That copy lives in this package rather than being read from `spec/`, because cargo ships only
+/// files under a package root, and `spec/` is above two of them. CI compares the two byte for byte,
+/// so the file the spec points at stays the one that ships.
 pub fn core_rules() -> Vec<CoreRule> {
     #[derive(Deserialize)]
     struct File {
@@ -63,7 +67,7 @@ pub fn core_rules() -> Vec<CoreRule> {
         .rules
 }
 
-const EMBEDDED_CORE_RULES: &str = include_str!("../../../spec/core-rules.json");
+const EMBEDDED_CORE_RULES: &str = include_str!("../../core-rules.json");
 
 /// The one file a profile publishes (spec §10). Its shape is `spec/schema/prpc-1/profile.json`,
 /// which is normative; this type is the reference reader of it, and every field the meta-schema
@@ -253,7 +257,7 @@ impl ProfileSpec {
                 expected: MECHANISM.to_string(),
             });
         }
-        if !plugin_rpc::is_revision(&self.protocol_version) {
+        if !crate::is_revision(&self.protocol_version) {
             return Err(SpecError::Version(self.protocol_version.clone()));
         }
         if self.methods.contains_key("handshake") {

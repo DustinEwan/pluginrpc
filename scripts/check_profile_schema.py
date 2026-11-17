@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the committed profile-spec meta-schema against crates/plugin-rpc-conformance/tests/profile_cases.json.
+"""Check the committed profile-spec meta-schema against crates/plugin-rpc/tests/profile_cases.json.
 
 The same table drives the Rust half in tests/profile_spec.rs. This half matters because a profile
 author validates their profile spec with `schema/prpc-1/profile.json` and loads it with a host's
@@ -17,7 +17,7 @@ except ModuleNotFoundError:
     sys.exit("this check needs jsonschema: pip install jsonschema")
 
 ROOT = Path(__file__).resolve().parents[1]
-TABLE = ROOT / "crates" / "plugin-rpc-conformance" / "tests" / "profile_cases.json"
+TABLE = ROOT / "crates" / "plugin-rpc" / "tests" / "profile_cases.json"
 META = ROOT / "spec" / "schema" / "prpc-1" / "profile.json"
 
 

@@ -7,7 +7,13 @@
 //! that file for the vocabulary this crate's names come from: a *message* is one line, the
 //! *envelope* is the fields every message carries regardless of profile, a *refusal* is a
 //! response carrying `error`, and a *loss* is the host receiving no answer.
+//!
+//! `conformance` is the other half of `prpc/1`: the six core rules the mechanism runs for every
+//! profile, the reader for the one file a profile publishes, and the report shape. It lives in this
+//! crate because §12 is as normative as §3, and a plugin author who reads one should find the other
+//! in the crate they already added.
 
+pub mod conformance;
 pub mod process;
 
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};

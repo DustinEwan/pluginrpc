@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
 
-use plugin_rpc_conformance::{core, CoreCheck, Manifest, ProfileSpec};
+use plugin_rpc::conformance::{core, CoreCheck, Manifest, ProfileSpec};
 
 const USAGE: &str = "usage: prpc-core <profile.json> <manifest.json> [--env NAME=value] [--cwd DIR] [--deadline-ms N]";
 

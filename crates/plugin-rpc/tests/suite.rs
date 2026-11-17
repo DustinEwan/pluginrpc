@@ -1,8 +1,8 @@
 //! The suite contract of §12 item 6: what the mechanism puts in the suite's directory, and what it
-//! requires back. `plugin_rpc_conformance::run_suite` is the reference driver, and these tests are
+//! requires back. `plugin_rpc::conformance::run_suite` is the reference driver, and these tests are
 //! the first thing that ever ran it.
 
-use plugin_rpc_conformance::{run_suite, Manifest, Outcome, ProfileSpec, SuiteError};
+use plugin_rpc::conformance::{run_suite, Manifest, Outcome, ProfileSpec, SuiteError};
 use std::path::{Path, PathBuf};
 
 fn fixtures() -> PathBuf {

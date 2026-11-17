@@ -8,7 +8,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use plugin_rpc_conformance::{Defect, ProfileSpec};
+use plugin_rpc::conformance::{Defect, ProfileSpec};
 
 const TABLE: &str = include_str!("profile_cases.json");
 

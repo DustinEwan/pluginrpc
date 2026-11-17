@@ -1,17 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["crates/plugin-rpc", "crates/plugin-rpc-conformance"]
+members = ["crates/plugin-rpc"]
 
 [workspace.package]
-version = "0.1.0-alpha.6"
+version = "0.1.0-alpha.7"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"
 
 [workspace.dependencies]
-# The reference runner depends on the reference types. Naming the version once, here, is what keeps
-# a release bump to one line: the runner inherits it the way the two consumer repos do.
-plugin-rpc = { path = "crates/plugin-rpc", version = "0.1.0-alpha.6" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 schemars = "1.2.3"

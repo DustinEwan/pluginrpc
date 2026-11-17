@@ -6,7 +6,7 @@
 //! profile and why a profile author writes no code for them (§12 item 7).
 //!
 //! The two probes that send a bad request drive the plugin over their own pipes rather than through
-//! [`plugin_rpc::process::Plugin`], and that is deliberate: the typed client drops a line it cannot
+//! [`crate::process::Plugin`], and that is deliberate: the typed client drops a line it cannot
 //! parse, which is right for a host and wrong for a suite checking whether a plugin answers a
 //! malformed line at all. §12 item 6 gives a suite its own process and pipes for exactly this, and
 //! both profiles that drove this design already do it that way.
@@ -17,11 +17,11 @@ use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::mpsc::{channel, Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
-use plugin_rpc::process::{HandshakeMethod, Plugin, PluginConfig, StartError, Timeouts};
-use plugin_rpc::{Call, Loss, METHOD_NOT_FOUND, PARSE_ERROR};
+use crate::process::{HandshakeMethod, Plugin, PluginConfig, StartError, Timeouts};
+use crate::{Call, Loss, METHOD_NOT_FOUND, PARSE_ERROR};
 use serde_json::Value;
 
-use crate::{core_rules, ProfileSpec, Report, Verdict};
+use super::{core_rules, ProfileSpec, Report, Verdict};
 
 /// The method name the `unknown-method` rule sends. It is the mechanism's own, not a profile's, so
 /// a profile cannot make the rule vacuous by declaring it: [`CoreCheck::unknown_method`] keeps
@@ -111,7 +111,7 @@ pub fn run(check: &CoreCheck) -> Report {
                     ),
                 ));
             }
-            // `Plugin::start` deserialized the answer into `plugin_rpc::Handshake`, whose
+            // `Plugin::start` deserialized the answer into `crate::Handshake`, whose
             // deserializer enforces every constraint `schema/prpc-1/handshake.json` states — the
             // `<namespace>/<revision>` pattern, the two non-empty strings, and the capability
             // array's non-empty uniqueness — and `tests/envelope_parity.rs` holds the type and the
@@ -358,7 +358,7 @@ impl Raw {
         let (tx, rx) = channel();
         std::thread::spawn(move || {
             use std::io::BufRead;
-            let mut reader = plugin_rpc::buffered(stdout);
+            let mut reader = crate::buffered(stdout);
             let mut line = String::new();
             loop {
                 line.clear();
@@ -378,7 +378,7 @@ impl Raw {
         });
         Ok(Raw {
             child,
-            stdin: plugin_rpc::buffered_writer(stdin),
+            stdin: crate::buffered_writer(stdin),
             lines: rx,
             deadline: check.deadline,
         })

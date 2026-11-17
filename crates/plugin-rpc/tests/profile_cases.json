@@ -1,5 +1,5 @@
 {
-  "description": "The same table drives crates/plugin-rpc-conformance/tests/profile_spec.rs (the reference loader) and scripts/check_profile_schema.py (the committed meta-schema). A rule the meta-schema enforces and the loader does not shows up there; a rule the loader enforces and the meta-schema does not shows up here.",
+  "description": "The same table drives crates/plugin-rpc/tests/profile_spec.rs (the reference loader) and scripts/check_profile_schema.py (the committed meta-schema). A rule the meta-schema enforces and the loader does not shows up there; a rule the loader enforces and the meta-schema does not shows up here.",
   "cases": [
     {
       "name": "demo-ok",

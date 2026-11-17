@@ -505,7 +505,7 @@ impl Drop for Plugin {
 /// The one method the mechanism names (spec §1). A profile's vocabulary is its own type
 /// implementing [`MethodName`]; this is what the transport sends for itself, and it is public
 /// because a host or a suite that asks a plugin to shake hands again — the `process-alive` rule of
-/// `plugin-rpc-conformance` does — is asking the mechanism's method and not one of the profile's.
+/// `crate::conformance` does — is asking the mechanism's method and not one of the profile's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HandshakeMethod {
     Handshake,

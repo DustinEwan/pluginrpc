@@ -34,13 +34,13 @@ rule.
 | `spec/spec.md` | The normative mechanism specification, revision `prpc/1`, opening with the glossary |
 | `spec/schema/prpc-1/` | The normative envelope schemas, and `profile.json`, the meta-schema for the one file a profile publishes (JSON Schema draft 2020-12) |
 | `spec/core-rules.json` | The conformance rules every profile inherits |
-| `crates/plugin-rpc/` | Rust reference implementation of the messages, the loss reasons, and the answers; `src/process.rs` adds the transport for a plugin started as a child process |
-| `crates/plugin-rpc-conformance/` | Rust reference implementation of the conformance procedure: the profile-spec reader, the six core rules, the report shape, and the `prpc-core` command |
+| `crates/plugin-rpc/` | The Rust reference implementation of the whole mechanism: the messages, the loss reasons, and the answers; `src/process.rs` the transport for a plugin started as a child process; `src/conformance/` the profile-spec reader, the six core rules, the report shape, and the `prpc-core` command |
 
 ## Reference implementation
 
-The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`.
-Its 34 tests assert the wire contract exactly as a plugin written in any other language must
+The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`, and
+its `conformance` module implements §11 and §12. Its 50 tests assert the wire contract exactly as
+a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,
 blank-line loss, the open envelope, the reserved id 0, and the two rules the types enforce
@@ -92,13 +92,13 @@ for and the six things §10 requires of it: its `protocolVersion`, its manifest 
 set with the path to each request and response schema, its capability vocabulary with what the host
 does when each is absent, its loss mapping, and its own rules with the scripted defect that proves
 each one or a sentence saying none exists. Its shape is `spec/schema/prpc-1/profile.json`, and
-`plugin-rpc-conformance` reads it.
+`plugin_rpc::conformance` reads it.
 
 The six rules in `spec/core-rules.json` name no method of any profile, so the mechanism runs them
 for every profile from that file and the plugin's manifest alone, with no profile code:
 
 ```
-cargo run -p plugin-rpc-conformance --bin prpc-core -- <profile.json> <manifest.json>
+cargo run -p plugin-rpc --bin prpc-core -- <profile.json> <manifest.json>
 ```
 
 It reports `pass`, `violation`, or `not-applicable` per rule, and a rule the run could not attempt
