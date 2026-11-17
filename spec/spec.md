@@ -238,9 +238,11 @@ A profile is complete if it names:
 
 1. its `protocolVersion` string, as `<namespace>/<revision>`;
 2. its method set, with a normative JSON Schema (draft 2020-12) for every request's params and
-   every response's result;
+   every response's result, each named by a path resolved beside the profile spec that names it;
 3. its capability vocabulary, and the host's behavior if each capability is absent;
-4. the mapping from loss (§8) to domain meaning, and any loss reason it adds (§8);
+4. the mapping from loss (§8) to domain meaning, and any loss reason it adds (§8). A mapped value
+   is the profile's own word for that loss, whether a sentence or a field of its domain, and the
+   mechanism never reads it: it is not a rule id, and a report never joins one to a rule;
 5. its manifest filename (§11);
 6. its conformance rules on top of the core rules (§12).
 
@@ -254,6 +256,14 @@ mechanism runs the core rules (§12) from that file and the plugin's manifest al
 profile code, and the profile's own suite program reads the same file for the rules beside them.
 A profile that names a method in the file and not in a schema is incomplete, and a suite that
 ignores the file is not running the profile.
+
+The profile commits that file and names it to its host and to a conformance run; the mechanism
+fixes no directory for it, because the host is the program that already knows its own profile, and
+the manifest the file names travels in a plugin package (§11), which is a different tree. Every
+schema path the file names has to exist beside it. A profile spec that names a schema the reader
+cannot open is refused when it is read, before any request goes out, because a schema that is not
+there makes every rule that validates against it silently unrunnable, and a report that left those
+rules out would read as a plugin that passed them.
 
 ## 11. Plugin manifest
 
@@ -313,8 +323,15 @@ passes. The mechanism fixes the procedure:
    because a report that attributes the suite's own failure to the plugin stops authors from
    trusting reports.
 6. The profile spec names a **suite program**, run as `<argv> --out <dir>` after the mechanism
-   wrote that directory's `profile.json` (the profile spec) and `manifest.json` (the plugin's
-   manifest). The program writes `verdicts.json`: one entry per rule the profile declares, each
+   wrote that directory's `profile.json` (the profile spec), `manifest.json` (the plugin's
+   manifest), and every schema file the profile spec names, each at the path the spec gives it and
+   resolved beside `<dir>`. The copies are what let the suite validate a response against the schema
+   its author implemented against: the spec's paths are resolved beside the committed spec (§10
+   item 2), so a path left as the spec wrote it would name a directory the suite was never given.
+   The program is started in the mechanism's own working directory, the way the manifest's
+   `command` is (§11), so a relative program name is the profile's own assumption about where the
+   run starts, and `--out` is how the mechanism hands it everything else.
+   The program writes `verdicts.json`: one entry per rule the profile declares, each
    naming the rule and giving `pass`, `violation` with a note, or `not-applicable` with a
    reason. It is a program and not a file format, for the same reason the emitter is: a
    profile's own rules need arbitrary logic, and the mechanism is not a programming language.

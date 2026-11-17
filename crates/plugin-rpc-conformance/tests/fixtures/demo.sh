@@ -33,6 +33,14 @@ while IFS= read -r line; do
         exit 0
       fi
       ;;
+    *'"method":"ping"'*)
+      # `ping-schema`: the answer is not an instance of schema/ping.json.
+      if [ "$DEMO_DEFECT" = ping ]; then
+        answer "$(id_of "$line")" '{"pong":"yes"}'
+      else
+        answer "$(id_of "$line")" '{"pong":true}'
+      fi
+      ;;
     *'"method":'*)
       # `unknown-method`: a method outside the profile is answered instead of refused.
       if [ "$DEMO_DEFECT" = unknown ]; then

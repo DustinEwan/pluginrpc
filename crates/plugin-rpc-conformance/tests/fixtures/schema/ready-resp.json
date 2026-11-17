@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema/ready-resp.json",
+  "title": "ready result",
+  "type": "object",
+  "required": ["ready"],
+  "properties": {
+    "ready": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

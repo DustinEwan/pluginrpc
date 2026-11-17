@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema/prepared.json",
+  "title": "prepare result",
+  "type": "object",
+  "required": ["target", "prepared"],
+  "properties": {
+    "target": { "type": "string" },
+    "prepared": { "type": "string" }
+  },
+  "additionalProperties": false
+}

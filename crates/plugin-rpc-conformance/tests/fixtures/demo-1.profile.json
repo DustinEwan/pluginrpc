@@ -33,14 +33,14 @@
     }
   },
   "conformance": {
-    "suite": ["/bin/sh", "fixtures/suite.sh"],
+    "suite": ["/bin/sh", "tests/fixtures/suite.sh"],
     "deadlineMs": 700,
     "rules": [
       {
         "id": "ping-schema",
         "expectation": "ping answers an instance of its committed result schema.",
         "defect": {
-          "run": ["/bin/sh", "fixtures/demo.sh"],
+          "run": ["/bin/sh", "tests/fixtures/demo.sh"],
           "env": ["DEMO_DEFECT=ping"],
           "expectViolation": ["ping-schema"]
         }

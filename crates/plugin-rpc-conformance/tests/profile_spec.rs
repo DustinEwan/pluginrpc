@@ -181,3 +181,21 @@ fn document(rule: Value) -> String {
     conformance.insert("rules".to_string(), Value::Array(merged_rules));
     serde_json::to_string(&document).expect("a profile spec is serializable")
 }
+
+#[test]
+fn a_schema_the_spec_names_that_is_not_there_is_refused_when_the_spec_is_read() {
+    // §10 item 2 resolves a schema path beside the spec file, so a spec copied somewhere the
+    // schemas are not is refused when it is read. Loading it anyway would leave every rule that
+    // validates against that schema silently unrunnable, and the report would read as a plugin
+    // that passed them.
+    let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("no-schemas");
+    std::fs::create_dir_all(&dir).expect("the directory is creatable");
+    let path = dir.join("profile.json");
+    std::fs::write(&path, table().cases[0].document.to_string()).expect("the spec is writable");
+    let error = ProfileSpec::load(&path).expect_err("no schema file is beside this spec");
+    assert!(
+        // `coverageMap` sorts before `ping`, so it is the first name the reader cannot open.
+        error.to_string().contains("schema/coverage.json"),
+        "{error}"
+    );
+}

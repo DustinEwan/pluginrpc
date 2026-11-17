@@ -205,7 +205,33 @@ impl ProfileSpec {
             path: path.display().to_string(),
             source,
         })?;
-        ProfileSpec::parse(&text)
+        let spec = ProfileSpec::parse(&text)?;
+        // §10 item 2 resolves every schema path beside this file, so a name the reader cannot open
+        // is refused here rather than becoming a rule that silently never ran.
+        let dir = path.parent().unwrap_or_else(|| Path::new("."));
+        for file in spec.schema_files() {
+            if !dir.join(file).is_file() {
+                return Err(SpecError::MissingSchema {
+                    file: file.to_string(),
+                    path: dir.join(file).display().to_string(),
+                });
+            }
+        }
+        Ok(spec)
+    }
+
+    /// Every schema file the method set names, each listed once: several methods share one request
+    /// schema, and the mechanism copies a file once (§12 item 6).
+    pub fn schema_files(&self) -> Vec<&str> {
+        let mut files: Vec<&str> = Vec::new();
+        for method in self.methods.values() {
+            for name in method.params.iter().chain(std::iter::once(&method.result)) {
+                if !files.contains(&name.as_str()) {
+                    files.push(name.as_str());
+                }
+            }
+        }
+        files
     }
 
     /// The same validation, from text already in hand.
@@ -605,14 +631,16 @@ pub enum SuiteError {
 
 /// Run the profile's own suite program and turn its `verdicts.json` into report lines (§12 item 6).
 ///
-/// The mechanism writes `profile.json` and `manifest.json` into `out_dir`, runs
-/// `<argv> --out <dir>`, and then requires exactly one verdict for every rule the profile declares
-/// and none it does not. A rule the program did not report is an error and not a pass, because a
-/// report that reads a missing verdict as a pass is the one failure a conformance report must not
-/// have.
+/// The mechanism writes `profile.json`, `manifest.json`, and every schema file the profile spec
+/// names into `out_dir` — the last at the path the spec gives, copied from `spec_dir`, which is the
+/// directory the spec was loaded from — then runs `<argv> --out <dir>`, and then requires exactly
+/// one verdict for every rule the profile declares and none it does not. A rule the program did not
+/// report is an error and not a pass, because a report that reads a missing verdict as a pass is the
+/// one failure a conformance report must not have.
 pub fn run_suite(
     profile: &ProfileSpec,
     manifest: &Manifest,
+    spec_dir: &Path,
     out_dir: &Path,
 ) -> Result<Report, SuiteError> {
     std::fs::create_dir_all(out_dir).map_err(|source| SuiteError::Io {
@@ -621,6 +649,20 @@ pub fn run_suite(
     })?;
     write_json(&out_dir.join("profile.json"), profile)?;
     write_json(&out_dir.join("manifest.json"), manifest)?;
+    for file in profile.schema_files() {
+        let from = spec_dir.join(file);
+        let dest = out_dir.join(file);
+        if let Some(parent) = dest.parent() {
+            std::fs::create_dir_all(parent).map_err(|source| SuiteError::Io {
+                path: parent.display().to_string(),
+                source,
+            })?;
+        }
+        std::fs::copy(&from, &dest).map_err(|source| SuiteError::Io {
+            path: from.display().to_string(),
+            source,
+        })?;
+    }
 
     let argv = &profile.conformance.suite;
     let Some(program) = argv.first() else {
@@ -730,6 +772,10 @@ pub enum SpecError {
     DeadlineZero,
     #[error("`loss.added` names `{reason}` twice; a report that lists one loss reason twice miscounts it (§8)")]
     DuplicateLossReason { reason: String },
+    #[error(
+        "`{file}` names no schema beside the profile spec; it resolves to `{path}` (§10 item 2)"
+    )]
+    MissingSchema { file: String, path: String },
     #[error(
         "`{rule}` is one of the core rules; a profile adds rules beside them and never repeats one"
     )]

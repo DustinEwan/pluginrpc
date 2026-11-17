@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema/ping.json",
+  "title": "ping result",
+  "type": "object",
+  "required": ["pong"],
+  "properties": {
+    "pong": { "const": true }
+  },
+  "additionalProperties": false
+}

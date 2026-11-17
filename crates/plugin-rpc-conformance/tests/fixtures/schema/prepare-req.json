@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema/prepare-req.json",
+  "title": "prepare params",
+  "type": "object",
+  "required": ["target"],
+  "properties": {
+    "target": { "type": "string" },
+    "deadlineMs": { "type": "integer", "minimum": 1 }
+  },
+  "additionalProperties": false
+}

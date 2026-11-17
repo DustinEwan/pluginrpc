@@ -165,7 +165,7 @@
     "schemaFile": {
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*\\.json$",
-      "description": "A committed JSON Schema file, resolved beside this file. Draft 2020-12, §10 item 2."
+      "description": "A committed JSON Schema file, at a path resolved beside this file and copied into the suite directory at that same path (§12 item 6). Draft 2020-12, §10 item 2."
     },
     "ruleId": {
       "type": "string",

@@ -112,3 +112,14 @@ one response against another, fold across ten invocations, and derive inputs by 
 mechanism is not a programming language. A suite in any language produces the same report because
 §12 fixes the order, the three results, the not-applicable accounting, and the rule that a missing
 verdict is a suite error rather than a pass.
+
+Before the suite program starts, the mechanism writes `profile.json`, `manifest.json`, and every
+schema file the profile spec names into `<dir>`, each at the path the spec gives. The spec's paths
+are resolved beside the committed spec (§10 item 2), and the loader refuses a spec that names a
+schema it cannot open, so a suite validates an answer against the file its author read rather than
+against a path in a checkout the suite was never handed.
+
+`tests/suite.rs` drives that contract against the demo profile: the suite program opens
+`schema/ping.json` out of the directory it was given, the scripted defect the spec names makes
+`ping-schema` report a violation and no other rule, and a suite that reports one of the profile's
+two rules fails as a suite error rather than passing the rule it skipped.
