@@ -72,16 +72,28 @@ impl Default for Timeouts {
 impl Timeouts {
     /// The `deadlineMs` to put in a request whose host-side wait is `host_timeout` (spec §9).
     ///
-    /// The host owns the wait and derives the plugin's deadline from it, because the two numbers
-    /// are one decision written twice. A profile whose params carry `deadlineMs` fills it here and
-    /// passes `host_timeout` to [`Plugin::request`]. A host that instead computes `deadline +
-    /// margin` at the call site has reintroduced the second copy.
+    /// Use this when the host's configuration names the host's own wait, a scenario's wall clock
+    /// for example, and the plugin's budget follows from it. A host whose configuration names the
+    /// plugin's budget instead, as a per-invocation `deadlineMs` does, uses
+    /// [`Timeouts::host_wait`]. Either way the pair comes from this one rule, and a host that
+    /// writes `deadline + margin` or `deadline - margin` at its own call site has written it twice.
     pub fn plugin_deadline(host_timeout: Duration) -> u64 {
         host_timeout
             .saturating_sub(DEADLINE_MARGIN)
             .as_millis()
             .try_into()
             .unwrap_or(u64::MAX)
+    }
+
+    /// The host-side wait for a request whose `deadlineMs` is `plugin_deadline` (spec §9).
+    ///
+    /// The inverse of [`Timeouts::plugin_deadline`], for the profile shape where the configured
+    /// number IS the plugin's budget: a host configured with a 2000 ms invocation deadline sends
+    /// `deadlineMs: 2000` and waits 2250 ms. Deriving that pair the other way round silently
+    /// shortens the budget the profile promised its plugin, which is a change to what the host's
+    /// own configuration option means.
+    pub fn host_wait(plugin_deadline: Duration) -> Duration {
+        plugin_deadline + DEADLINE_MARGIN
     }
 }
 
@@ -189,9 +201,13 @@ struct State {
 }
 
 impl State {
-    /// Record `reason`, keeping the first cause the precedence rules allow (spec §8).
+    /// Record `reason`, keeping the first cause the precedence rules allow (spec §8), and wake
+    /// every request still waiting. Dropping the senders makes each waiter's `recv_timeout` return
+    /// `Disconnected` immediately, so a plugin that dies while a call is in flight is reported
+    /// when it dies and not when the host's wait happens to end.
     fn lose(&mut self, reason: Loss) {
         self.lost = Some(Loss::resolve(self.lost.take(), reason));
+        self.slots.clear();
     }
 }
 
@@ -342,19 +358,30 @@ impl Plugin {
     where
         T: DeserializeOwned,
     {
-        if let Some(loss) = self.lost() {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let (tx, rx) = channel();
+        // Claim the slot and read the connection's state under one lock. Checking for a loss and
+        // then inserting would let a loss land in between, and a slot inserted after `State::lose`
+        // cleared the map is never woken: that call would wait out its whole timeout.
+        let already_lost = {
+            let mut state = self
+                .state
+                .lock()
+                .expect("the connection state is never poisoned");
+            match state.lost.clone() {
+                Some(loss) => Some(loss),
+                None => {
+                    state.slots.insert(id, tx);
+                    None
+                }
+            }
+        };
+        if let Some(loss) = already_lost {
             // The connection is already known to be down. Ask the watcher for the process's own
             // reason before reporting what an observer noticed, so a plugin that died between two
             // calls is reported as having died (spec §8).
             return Call::Lost(self.exit_status(EXIT_STATUS_WAIT).unwrap_or(loss));
         }
-        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
-        let (tx, rx) = channel();
-        self.state
-            .lock()
-            .expect("the connection state is never poisoned")
-            .slots
-            .insert(id, tx);
 
         let request = match params {
             Some(params) => Request::new(id, method, params),

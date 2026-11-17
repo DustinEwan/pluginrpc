@@ -223,6 +223,65 @@ fn the_plugin_is_told_the_deadline_the_host_will_not_wait_past() {
         Duration::from_millis(given) < Duration::from_secs(2),
         "the plugin's deadline is strictly inside the host's wait"
     );
+
+    // The other direction. A profile whose configured number IS the plugin's budget must not have
+    // that budget shortened because the host derived the pair the other way round: `--deadline
+    // 2000` has to put `deadlineMs: 2000` on the wire.
+    let wait = Timeouts::host_wait(Duration::from_millis(2_000));
+    assert_eq!(wait, Duration::from_millis(2_250));
+    assert_eq!(
+        Timeouts::plugin_deadline(wait),
+        2_000,
+        "the two helpers are inverses, so the configured number is what the plugin is told"
+    );
+}
+
+#[test]
+fn a_plugin_that_dies_mid_call_is_reported_when_it_dies() {
+    // The plugin answers the handshake and then dies 400 ms into a call whose wait is 10 s. A host
+    // that notices only when its wait ends reports a dead plugin as a slow one for 10 seconds, and
+    // a restart policy that counts consecutive losses falls 10 seconds per restart behind.
+    let (plugin, _handshake) = start(&format!("{ASKED}{}sleep 0.4; exit 9", say(HANDSHAKE)));
+    let began = std::time::Instant::now();
+    let call: Call<Note> = plugin.request(Work::Run, None, Duration::from_secs(10));
+    let elapsed = began.elapsed();
+    assert_eq!(
+        call.loss(),
+        Some(Loss::Exited {
+            code: Some(9),
+            signal: None
+        }),
+        "a death mid-call is the exit status, not the timeout"
+    );
+    assert!(
+        elapsed < Duration::from_secs(5),
+        "the death woke the call after {elapsed:?}, not at the end of the 10 s wait"
+    );
+}
+
+#[test]
+fn a_kill_while_a_call_is_in_flight_resolves_that_call() {
+    let (plugin, _handshake) = start(&format!("{ASKED}{}sleep 30", say(HANDSHAKE)));
+    let began = std::time::Instant::now();
+    let loss = std::thread::scope(|scope| {
+        let calling = scope.spawn(|| {
+            let call: Call<Note> = plugin.request(Work::Run, None, Duration::from_secs(20));
+            call.loss()
+        });
+        std::thread::sleep(Duration::from_millis(300));
+        plugin.kill();
+        calling.join().expect("the calling thread does not panic")
+    });
+    assert_eq!(
+        loss,
+        Some(Loss::Killed),
+        "the host's own kill is the reason, not the exit status it produced"
+    );
+    assert!(
+        began.elapsed() < Duration::from_secs(5),
+        "the kill woke the call after {:?}, not at the end of the 20 s wait",
+        began.elapsed()
+    );
 }
 
 #[test]

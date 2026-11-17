@@ -39,7 +39,7 @@ rule.
 ## Reference implementation
 
 The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`.
-Its 31 tests assert the wire contract exactly as a plugin written in any other language must
+Its 33 tests assert the wire contract exactly as a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,
 blank-line loss, the open envelope, the reserved id 0, and the two rules the types enforce
@@ -71,13 +71,15 @@ four core ones reach the host without a second `handshake` request.
 stderr, which §3 requires, because a pipe nobody reads stops the plugin, it records
 `Loss::Killed` before it asks for a kill so an in-flight call is attributed to the host rather
 than to the exit status that kill produced, and it ends the plugin on drop unless `detach` said
-otherwise. The 13 tests in
-`tests/process.rs` start real child processes, so they cover a plugin that dies mid-call, refuses,
-stays silent, writes to stderr, answers with an `id` 0 refusal, and carries profile fields in the
-handshake.
+otherwise. The 15 tests in `tests/process.rs` start real child processes, so they cover a plugin
+that refuses, stays silent, writes to stderr, answers with an `id` 0 refusal, carries profile
+fields in the handshake, and dies or is killed while a call is in flight. A call waiting on a dead
+plugin is woken when the process goes, so a restart policy that counts consecutive losses does not
+fall one full timeout behind per restart.
 
-The two timings the plugin controls are mechanism constants rather than configuration: how long a
-call waits for the process's exit status before it stops reporting a closed pipe as the cause, and
-how long `kill` blocks for the process to be gone. `Timeouts::plugin_deadline` turns a host's own
-wait into the `deadlineMs` the plugin is told, so §9's rule is written once instead of at every
-call site.
+The two timings the transport itself needs are mechanism constants rather than configuration: how
+long a call waits for the process's exit status before it stops reporting a closed pipe as the
+cause, and how long `kill` blocks for the process to be gone. §9's deadline pair comes from
+`Timeouts::plugin_deadline` when the host's configuration names its own wait, and from
+`Timeouts::host_wait` when it names the plugin's budget, so the rule is written once and neither
+direction silently changes what the host's own option means.
