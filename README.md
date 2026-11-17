@@ -98,7 +98,7 @@ The six rules in `spec/core-rules.json` name no method of any profile, so the me
 for every profile from that file and the plugin's manifest alone, with no profile code:
 
 ```
-cargo run -p plugin-rpc --bin prpc-core -- <profile.json> <manifest.json>
+cargo run -p plugin-rpc --bin prpc-core -- <profile.json> <manifest.json> [--suite]
 ```
 
 It reports `pass`, `violation`, or `not-applicable` per rule, and a rule the run could not attempt
@@ -112,6 +112,12 @@ one response against another, fold across ten invocations, and derive inputs by 
 mechanism is not a programming language. A suite in any language produces the same report because
 §12 fixes the order, the three results, the not-applicable accounting, and the rule that a missing
 verdict is a suite error rather than a pass.
+
+`prpc-core --suite` is the one command that runs both halves: it writes the spec, the manifest,
+and the schemas the spec names into a directory, runs the profile's suite program there, reads
+`verdicts.json` back, and prints the profile's verdicts after the six core ones. A suite program
+that fails to write the file is reported as a suite error, never as a plugin violation (§12 item
+5).
 
 Before the suite program starts, the mechanism writes `profile.json`, `manifest.json`, and every
 schema file the profile spec names into `<dir>`, each at the path the spec gives. The spec's paths

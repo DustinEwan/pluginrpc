@@ -6,22 +6,25 @@
 //! language runs this before writing a plugin's own suite, and a host that has its own runner can
 //! diff against it.
 //!
-//! The profile's own rules are not run here: they belong to the profile's suite program (§12
-//! item 6), which this command does not invoke.
+//! With `--suite`, the command also runs the profile's own suite program (§12 item 6): it writes
+//! the profile spec, the manifest, and the schemas the spec names into a directory, runs
+//! `<argv> --out <dir>`, and reads the verdicts back. The two halves print as one report, core
+//! rules first.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
 
-use plugin_rpc::conformance::{core, CoreCheck, Manifest, ProfileSpec};
+use plugin_rpc::conformance::{core, run_suite, CoreCheck, Manifest, ProfileSpec};
 
-const USAGE: &str = "usage: prpc-core <profile.json> <manifest.json> [--env NAME=value] [--cwd DIR] [--deadline-ms N]";
+const USAGE: &str = "usage: prpc-core <profile.json> <manifest.json> [--suite] [--env NAME=value] [--cwd DIR] [--deadline-ms N]";
 
 fn main() -> ExitCode {
     let mut positional: Vec<String> = Vec::new();
     let mut env: Vec<(String, String)> = Vec::new();
     let mut cwd: Option<PathBuf> = None;
     let mut deadline_ms: Option<u64> = None;
+    let mut suite = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -49,6 +52,7 @@ fn main() -> ExitCode {
                     Err(_) => return fail(&format!("`{ms}` is not a number of milliseconds")),
                 }
             }
+            "--suite" => suite = true,
             "--help" | "-h" => {
                 println!("{USAGE}");
                 return ExitCode::SUCCESS;
@@ -71,13 +75,25 @@ fn main() -> ExitCode {
     };
     let deadline =
         Duration::from_millis(deadline_ms.unwrap_or_else(|| profile.deadline_ms(Some(&manifest))));
-    let report = core::run(&CoreCheck {
+    let mut report = core::run(&CoreCheck {
         profile: &profile,
         command: manifest.command.clone(),
         env,
         cwd,
         deadline,
     });
+    if suite {
+        let spec_dir = PathBuf::from(&positional[0])
+            .parent()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("."));
+        let out_dir = std::env::temp_dir().join(format!("prpc-suite-{}", std::process::id()));
+        eprintln!("suite directory: {}", out_dir.display());
+        match run_suite(&profile, &manifest, &spec_dir, &out_dir) {
+            Ok(ran) => report.verdicts.extend(ran.verdicts),
+            Err(e) => report.suite_error = Some(e.to_string()),
+        }
+    }
     print!("{}", report.render());
     if report.passed() {
         ExitCode::SUCCESS
