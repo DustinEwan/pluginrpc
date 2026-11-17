@@ -105,26 +105,38 @@ fn main() -> ExitCode {
         // the same mark a profile gets for admitting it has no defect, because a pass on it is
         // not proof that the rule can detect the failure it targets.
         for rule in &profile.conformance.rules {
+            // The suite reports a scripted rule as verified on the profile's word alone, so this
+            // is where the word is either made good or taken back.
+            let verdict = report
+                .verdicts
+                .iter_mut()
+                .find(|verdict| verdict.rule == rule.id);
             match run_defect(rule, &profile, &manifest, &spec_dir, &out_dir, &check) {
                 DefectRun::Fired => {
-                    if let Some(verdict) = report
-                        .verdicts
-                        .iter_mut()
-                        .find(|verdict| verdict.rule == rule.id)
-                    {
+                    if let Some(verdict) = verdict {
                         verdict.unverified = false;
                     }
                 }
                 DefectRun::NotScripted => {}
-                DefectRun::Silent { missing } => eprintln!(
-                    "note  {}: its scripted defect left {} still passing",
-                    rule.id,
-                    missing.join(", ")
-                ),
-                DefectRun::Failed { detail } => eprintln!(
-                    "note  {}: its scripted defect could not be run: {detail}",
-                    rule.id
-                ),
+                DefectRun::Silent { missing } => {
+                    eprintln!(
+                        "note  {}: its scripted defect left {} still passing",
+                        rule.id,
+                        missing.join(", ")
+                    );
+                    if let Some(verdict) = verdict {
+                        verdict.unverified = true;
+                    }
+                }
+                DefectRun::Failed { detail } => {
+                    eprintln!(
+                        "note  {}: its scripted defect could not be run: {detail}",
+                        rule.id
+                    );
+                    if let Some(verdict) = verdict {
+                        verdict.unverified = true;
+                    }
+                }
             }
         }
     }

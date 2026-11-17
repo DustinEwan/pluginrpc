@@ -39,7 +39,7 @@ rule.
 ## Reference implementation
 
 The `plugin-rpc` crate implements the envelopes, the framing, and the vocabulary of `prpc/1`, and
-its `conformance` module implements §11 and §12. Its 51 tests assert the wire contract exactly as
+its `conformance` module implements §11 and §12. Its 52 tests assert the wire contract exactly as
 a plugin written in any other language must
 meet it, so a Rust plugin author who trusts the types cannot pass locally and then fail a host
 that validates against the committed schemas. The tests cover the omitted-`params` rule,

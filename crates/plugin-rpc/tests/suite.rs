@@ -202,3 +202,70 @@ fn a_scripted_defect_is_run_and_what_it_fired_is_what_the_rule_is_worth() {
         "a correct plugin fires nothing, so the claim is not proof: {silent:?}"
     );
 }
+
+/// Copy the fixture schemas under `into/schema`, so a profile spec written into a temporary
+/// directory still names files its loader can open (§10 item 2).
+fn copy_schemas(from: &Path, into: &Path) -> std::io::Result<()> {
+    let dest = into.join("schema");
+    std::fs::create_dir_all(&dest)?;
+    for entry in std::fs::read_dir(from)? {
+        let path = entry?.path();
+        std::fs::copy(&path, dest.join(path.file_name().expect("a schema file")))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn the_command_takes_back_the_mark_of_a_rule_whose_defect_did_not_fire() {
+    // The report's `unverified` column is worth exactly the defect run behind it, and `prpc-core`
+    // is what does that run, so the mark is tested through the command and not the library.
+    let dir = out_dir("command-mark");
+    std::fs::create_dir_all(&dir).expect("the suite directory is creatable");
+    copy_schemas(&fixtures().join("schema"), &dir).expect("the schemas copy");
+    let mut spec = demo_spec();
+    let Defect::Scripted {
+        run,
+        expect_violation,
+        ..
+    } = &spec.conformance.rules[0].defect
+    else {
+        panic!("the demo fixture's first rule carries a scripted defect");
+    };
+    spec.conformance.rules[0].defect = Defect::Scripted {
+        run: run.clone(),
+        env: Vec::new(),
+        expect_violation: expect_violation.clone(),
+    };
+    let spec_path = dir.join("profile.json");
+    std::fs::write(
+        &spec_path,
+        serde_json::to_string(&spec).expect("the spec serializes"),
+    )
+    .expect("the spec is writable");
+    let manifest_path = dir.join("manifest.json");
+    std::fs::write(
+        &manifest_path,
+        serde_json::to_string(&demo_manifest()).expect("the manifest serializes"),
+    )
+    .expect("the manifest is writable");
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_prpc-core"))
+        .arg(&spec_path)
+        .arg(&manifest_path)
+        .arg("--suite")
+        // The fixture plugin and the fixture suite program are named beside the crate, which is
+        // where the command started from a plugin author's checkout would find them.
+        .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")))
+        .output()
+        .expect("the command runs");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("ping-schema: its scripted defect left"),
+        "the command says which rule's defect did nothing: {stderr}"
+    );
+    assert!(
+        stdout.contains("unverified: no scripted defect fires this rule"),
+        "and the report says so too: {stdout}"
+    );
+}
