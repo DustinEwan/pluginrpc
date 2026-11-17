@@ -72,14 +72,14 @@ fn crlf_is_stripped_and_blank_line_is_loss() {
 #[test]
 fn handshake_envelope_accepts_profile_fields() {
     let line = json!({
-        "protocolVersion": "afz/1",
-        "name": "js-ts",
+        "protocolVersion": "demo/1",
+        "name": "mylang",
         "version": "0.3.0",
-        "capabilities": ["coverage", "minimize"],
+        "capabilities": ["alpha", "beta"],
         "targetClass": "library",
-        "discoverRequiresExecution": false
+        "extraFlag": false
     });
     let h: Handshake = serde_json::from_value(line).expect("profile fields are ignored, not rejected");
-    assert_eq!(h.protocol_version, "afz/1");
-    assert_eq!(h.capabilities, vec!["coverage", "minimize"]);
+    assert_eq!(h.protocol_version, "demo/1");
+    assert_eq!(h.capabilities, vec!["alpha", "beta"]);
 }
