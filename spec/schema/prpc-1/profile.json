@@ -36,7 +36,7 @@
       "propertyNames": {
         "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
         "not": { "const": "handshake" },
-        "description": "The method vocabulary is the profile's (§9), so the mechanism constrains only that the name is a single token and that `handshake` is not among it. `afz/1` names one method `coverageMap`: a mechanism that forced one casing on a profile's names would be a profile."
+        "description": "The method vocabulary is the profile's (§9), so the mechanism constrains only that the name is a single token and that `handshake` is not among it. A profile may spell its names in any casing, because a mechanism that forced one casing on a profile's names would itself be a profile."
       },
       "additionalProperties": {
         "type": "object",
@@ -45,7 +45,7 @@
         "properties": {
           "params": {
             "$ref": "#/$defs/schemaFile",
-            "description": "Schema for the request's `params`. Absent when the method takes no parameters, in which case §3 omits `params` from the request rather than sending null: `afz/1`'s `ready` and `coverageMap` are two such methods, and a profile forced to invent a file for them would ship a schema nothing validates."
+            "description": "Schema for the request's `params`. Absent when the method takes no parameters, in which case §3 omits `params` from the request rather than sending null. A method that takes nothing must leave this out, because a file describing the shape of nothing is a schema nothing validates."
           },
           "result": {
             "$ref": "#/$defs/schemaFile",
