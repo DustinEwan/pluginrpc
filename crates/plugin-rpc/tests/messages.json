@@ -71,6 +71,12 @@
       "detail": "The pattern allows any digits after the slash.",
       "message": { "protocolVersion": "demo/01", "name": "mylang", "version": "0.3.0", "capabilities": [] } },
     { "name": "hs-no-name", "schema": "handshake", "expect": "reject",
-      "message": { "protocolVersion": "demo/1", "version": "0.3.0", "capabilities": [] } }
+      "message": { "protocolVersion": "demo/1", "version": "0.3.0", "capabilities": [] } },
+    { "name": "hs-empty-name", "schema": "handshake", "expect": "reject",
+      "detail": "`minLength: 1` on `name`: a plugin that names itself nothing cannot be reported on.",
+      "message": { "protocolVersion": "demo/1", "name": "", "version": "0.3.0", "capabilities": [] } },
+    { "name": "hs-empty-version", "schema": "handshake", "expect": "reject",
+      "detail": "`minLength: 1` on `version`, for the same reason.",
+      "message": { "protocolVersion": "demo/1", "name": "mylang", "version": "", "capabilities": [] } }
   ]
 }

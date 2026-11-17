@@ -137,6 +137,31 @@ fn a_plugin_that_died_is_reported_as_exited_and_not_as_no_answer() {
 }
 
 #[test]
+fn an_answer_written_before_the_plugin_went_is_an_answer_and_not_a_loss() {
+    // The plugin answers and exits in the same breath, so the exit watcher can learn the status
+    // while the reader is still carrying the answer. Loss means no answer arrived (spec §8), so
+    // the answer belongs to the call and the death stays recorded for whoever asks next.
+    let answer = r#"{"jsonrpc":"2.0","id":2,"result":{"note":"done"}}"#;
+    let (plugin, _handshake) = start(&format!(
+        "{ASKED}{}{ASKED}{}exit 7",
+        say(HANDSHAKE),
+        say(answer)
+    ));
+    let call: Call<Note> = plugin.request(Work::Run, None, Duration::from_secs(5));
+    assert_eq!(
+        call.payload(),
+        Some(Note {
+            note: "done".to_string()
+        }),
+        "the answer arrived, so the call is not a loss"
+    );
+    // Which reason the exit watcher records, and when, is bounded by `EXIT_STATUS_WAIT` inside a
+    // call and is a scheduling fact on a loaded machine. What the mechanism guarantees here, and
+    // what this test is for, is the assertion above: an answer the plugin wrote before it went
+    // belongs to the call that asked for it, and the death of the process does not take it back.
+}
+
+#[test]
 fn a_refusal_is_an_answer_and_the_plugin_keeps_answering() {
     let refusal =
         r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"store unreachable"}}"#;

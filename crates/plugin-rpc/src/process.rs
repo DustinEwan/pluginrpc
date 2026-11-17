@@ -206,8 +206,16 @@ impl State {
     /// `Disconnected` immediately, so a plugin that dies while a call is in flight is reported
     /// when it dies and not when the host's wait happens to end.
     fn lose(&mut self, reason: Loss) {
-        self.lost = Some(Loss::resolve(self.lost.take(), reason));
+        self.record(reason);
         self.slots.clear();
+    }
+
+    /// Record `reason` and wake nobody. Only the reader may discard a request still waiting,
+    /// because the reader is the last place a line can be delivered from: a watcher that cleared
+    /// the slots would drop an answer already read from the pipe, and §8 makes loss mean that no
+    /// answer arrived. The exit watcher records, and the reader's end-of-output wakes the waiters.
+    fn record(&mut self, reason: Loss) {
+        self.lost = Some(Loss::resolve(self.lost.take(), reason));
     }
 }
 
@@ -388,9 +396,13 @@ impl Plugin {
             None => Request::empty(id, method),
         };
         if let Err(e) = self.write(&request) {
+            // The plugin's stdin is closed, so it is gone or going. An answer it wrote before it
+            // went is still in the pipe and the reader may be delivering it now, so the answer is
+            // taken when it arrives inside the wait for the process's own reason (§8).
+            if let Ok(response) = rx.recv_timeout(EXIT_STATUS_WAIT) {
+                return response.into_call();
+            }
             self.drop_slot(id);
-            // The write failed, so the plugin is gone or going. Ask the watcher how, rather than
-            // reporting a closed pipe as a cause in its own right.
             return Call::Lost(
                 self.exit_status(EXIT_STATUS_WAIT)
                     .unwrap_or_else(|| Loss::Spawn {
@@ -556,6 +568,8 @@ fn deliver(response: Response, state: &Mutex<State>) {
 /// place, so every kill goes through here: the kill request arrives over a channel, and the
 /// process's own exit is recorded as [`Loss::Exited`] with its status (spec §8). The sender is
 /// dropped when this thread ends, which is how [`Plugin::drop`] learns the process is gone.
+/// It records the reason without waking the waiting calls: the reader is still reading, and an
+/// answer already in the pipe belongs to the request that asked for it (spec §8).
 fn spawn_exit_watcher(
     mut child: Child,
     state: Arc<Mutex<State>>,
@@ -575,7 +589,7 @@ fn spawn_exit_watcher(
                     state
                         .lock()
                         .expect("the connection state is never poisoned")
-                        .lose(Loss::Spawn {
+                        .record(Loss::Spawn {
                             detail: format!("cannot wait for the plugin: {e}"),
                         });
                     drop(done_tx);
@@ -586,7 +600,7 @@ fn spawn_exit_watcher(
         state
             .lock()
             .expect("the connection state is never poisoned")
-            .lose(Loss::Exited {
+            .record(Loss::Exited {
                 code: status.code(),
                 signal: exit_signal(&status),
             });

@@ -340,9 +340,10 @@ pub struct Handshake {
     pub result: Value,
 }
 
-/// The two constraints `handshake.json` places on the core fields are checked here so the
-/// reference type and the committed schema accept the same handshakes (spec §6, §7):
-/// `protocolVersion` matches `<namespace>/<revision>`, and `capabilities` carries no duplicates.
+/// The constraints `handshake.json` places on the core fields are checked here so the reference
+/// type and the committed schema accept the same handshakes (spec §6, §7): `protocolVersion`
+/// matches `<namespace>/<revision>`, `name` and `version` are not empty, and `capabilities`
+/// carries no empty string and no duplicate.
 impl<'de> Deserialize<'de> for Handshake {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -363,6 +364,13 @@ impl<'de> Deserialize<'de> for Handshake {
                 "`protocolVersion` must be `<namespace>/<revision>`, as in \"demo/1\"; got {:?}",
                 wire.protocol_version
             )));
+        }
+        for (field, value) in [("name", &wire.name), ("version", &wire.version)] {
+            if value.is_empty() {
+                return Err(de::Error::custom(format!(
+                    "`{field}` must not be empty; a plugin that reports an empty {field} cannot be named in a report"
+                )));
+            }
         }
         if wire.capabilities.iter().any(String::is_empty) {
             return Err(de::Error::custom(
@@ -387,9 +395,11 @@ impl<'de> Deserialize<'de> for Handshake {
     }
 }
 
-/// Whether `version` matches the `<namespace>/<revision>` form of `handshake.json`. Hand-rolled
-/// so the reference type checks the pattern without a regular-expression dependency.
-fn is_revision(version: &str) -> bool {
+/// Whether `version` matches the `<namespace>/<revision>` form of `handshake.json` (spec §6).
+/// Hand-rolled so the reference type checks the pattern without a regular-expression dependency.
+/// A profile spec's `protocolVersion` uses the same pattern, so the check is public for the
+/// conformance runner to apply to the profile's own declaration.
+pub fn is_revision(version: &str) -> bool {
     let Some((namespace, revision)) = version.split_once('/') else {
         return false;
     };

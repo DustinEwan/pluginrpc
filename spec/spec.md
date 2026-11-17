@@ -248,6 +248,13 @@ A profile MAY set `additionalProperties: false` on its own payload schemas if it
 field checking. The schemas are the only place field strictness is set: conformance validates
 against the schemas, and deserializers enforce exactly what the schemas state.
 
+Items 1 to 6 are published as one committed file, the **profile spec**, whose shape is
+`schema/prpc-1/profile.json`. It is normative in the same way the payload schemas are: the
+mechanism runs the core rules (§12) from that file and the plugin's manifest alone, with no
+profile code, and the profile's own suite program reads the same file for the rules beside them.
+A profile that names a method in the file and not in a schema is incomplete, and a suite that
+ignores the file is not running the profile.
+
 ## 11. Plugin manifest
 
 A plugin package carries a JSON manifest whose filename the profile fixes. The shape is the
@@ -290,17 +297,39 @@ passes. The mechanism fixes the procedure:
    written in schema terms — field name, expected type — rather than an internal error from the
    suite's decoder, so the author sees the rule from the schema they implemented against named
    in the failure.
-3. Rules the suite could not run — the plugin did not declare the capability, an earlier rule
-   ended the run — are counted as not applicable, kept apart from the passes in the report.
+3. Rules the suite could not run are counted as not applicable, kept apart from the passes in
+   the report. Which capability gates which method, and which rules a failed rule makes
+   impossible to run, are stated in the profile spec, so the count of not-applicable rules does
+   not rest on the suite author's judgement. A rule that is neither gated nor dependent is
+   expected of every plugin, because a rule the suite skips for a reason it invented hides a
+   plugin that answered nothing.
 4. Every rule must be verified: the profile's test suite includes one scripted defect that
-   makes exactly that rule report a violation. A rule with no scripted defect is unverified,
-   because nothing has shown that the rule can detect the failure it targets.
+   makes exactly that rule report a violation. The profile spec carries, for each rule, either
+   the command that starts the plugin with that defect in place together with the exact set of
+   rules it must make report a violation, or a sentence saying why no such defect exists. A rule
+   with the second is reported as **unverified**, so a pass on it is not read as proof that the
+   rule can detect the failure it targets.
 5. A suite that cannot start its own fixture reports a suite error, not a plugin violation,
    because a report that attributes the suite's own failure to the plugin stops authors from
    trusting reports.
+6. The profile spec names a **suite program**, run as `<argv> --out <dir>` after the mechanism
+   wrote that directory's `profile.json` (the profile spec) and `manifest.json` (the plugin's
+   manifest). The program writes `verdicts.json`: one entry per rule the profile declares, each
+   naming the rule and giving `pass`, `violation` with a note, or `not-applicable` with a
+   reason. It is a program and not a file format, for the same reason the emitter is: a
+   profile's own rules need arbitrary logic, and the mechanism is not a programming language.
+   A program that exits without writing the file, or that reports a rule the profile does not
+   declare, is a suite error under (5), because a missing verdict read as a pass is the one
+   failure a conformance report must not have.
+7. The mechanism runs the core rules itself, from the profile spec and the manifest, before the
+   suite program starts, and puts them first in the report. A profile that restates a core rule
+   id among its own rules is malformed, because two verdicts for one check let a plugin pass the
+   copy and fail the original.
 
-The core rules, in the order a suite runs them, are `spec/core-rules.json`. A profile extends
-that list with its own rules.
+The core rules, in the order a suite runs them, are `spec/core-rules.json`: they name no method
+of any profile and need only the manifest's `command`, the envelope schemas, and the profile's
+`protocolVersion` string, which is why the mechanism can run them for every profile. A profile
+extends that list with its own rules.
 
 ## 13. Versioning
 
@@ -309,6 +338,10 @@ lifecycle, or the conformance procedure, and it is published together with the e
 under a new `prpc-<n>/` directory. A profile revision is independent: `demo/2` may keep using
 `prpc/1`. A profile that adds a handshake field or a method needs no mechanism revision,
 because the envelope is open (§2) and the method vocabulary is the profile's (§10).
+
+A profile that adds a rule, a method, or a capability edits its own profile spec and needs no
+mechanism revision, and a profile spec that names a `mechanism` the host does not implement is
+refused at load time rather than run and misreported.
 
 ## 14. Open items
 

@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/DustinEwan/pluginrpc/spec/prpc-1/profile.json",
+  "title": "Profile spec",
+  "description": "The one file a profile publishes, which makes spec.md §10 items 1 to 6 machine-readable. The mechanism reads it to run the core rules (§12) without any profile code, and a profile's own suite program reads it to run the rules beside them. Field strictness is `additionalProperties: false` here and in the profile's own payload schemas, and nowhere else (§10).",
+  "type": "object",
+  "required": [
+    "mechanism",
+    "protocolVersion",
+    "manifest",
+    "methods",
+    "capabilities",
+    "loss",
+    "conformance"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "mechanism": {
+      "const": "prpc/1",
+      "description": "The mechanism revision this profile was written against (§13)."
+    },
+    "protocolVersion": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[0-9]+$",
+      "description": "§6: the `<namespace>/<revision>` string the handshake must answer with, and the only version this file describes."
+    },
+    "manifest": {
+      "type": "string",
+      "minLength": 1,
+      "description": "§11: the manifest's filename inside a plugin package. The mechanism reads `command`, `install`, `build`, and `conformance` from it."
+    },
+    "methods": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "§10 item 2: the method set, with the committed schema for every request's params and every response's result. `handshake` is the mechanism's and must not be declared here.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "not": { "const": "handshake" },
+        "description": "kebab-case, and `handshake` is the mechanism's method, not the profile's."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["params", "result"],
+        "additionalProperties": false,
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/schemaFile",
+            "description": "Schema for the request's `params`. Name a file whose root schema rejects the member being absent, if the method takes no parameters: §3 omits `params` rather than sending null."
+          },
+          "result": {
+            "$ref": "#/$defs/schemaFile",
+            "description": "Schema for the response's `result`."
+          },
+          "requiresCapability": {
+            "type": "string",
+            "minLength": 1,
+            "description": "§12 item 3: when the handshake does not declare this capability, a rule that calls this method is not applicable rather than a violation. A method gated by nothing is expected of every plugin."
+          },
+          "deadlineField": {
+            "type": "string",
+            "minLength": 1,
+            "description": "§9: the params field carrying `deadlineMs` for this method, when it carries one. A rule that calls this method fills it from the manifest's `conformance.deadlineMs`."
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "§10 item 3: the profile's capability vocabulary, and what the host does when a plugin does not declare each one. An empty object means the profile declares none, and then no rule is ever not applicable for a missing capability.",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["ifAbsent"],
+        "additionalProperties": false,
+        "properties": {
+          "ifAbsent": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The host's behaviour when the handshake omits this capability, in one sentence. It is the reason a rule is counted not applicable."
+          }
+        }
+      }
+    },
+    "loss": {
+      "type": "object",
+      "required": ["mapping"],
+      "additionalProperties": false,
+      "properties": {
+        "mapping": {
+          "type": "object",
+          "description": "§10 item 4 and §8: the domain meaning of each loss reason the mechanism defines. Every reason must be mapped, because a host that leaves one unmapped reports a lost plugin as no finding at all.",
+          "required": ["spawn", "eof", "exited", "killed", "noAnswer"],
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "properties": {
+            "spawn": { "type": "string", "minLength": 1 },
+            "eof": { "type": "string", "minLength": 1 },
+            "exited": { "type": "string", "minLength": 1 },
+            "killed": { "type": "string", "minLength": 1 },
+            "noAnswer": { "type": "string", "minLength": 1 }
+          }
+        },
+        "added": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "description": "§8: loss reasons this profile adds, named so a report can say which mechanism named them."
+        }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "required": ["emitter", "suite", "rules"],
+      "additionalProperties": false,
+      "properties": {
+        "emitter": {
+          "$ref": "#/$defs/argv",
+          "description": "§12 item 1: the fixture emitter, run as `<argv> --out <dir>`. It produces inputs only; the suite produces results."
+        },
+        "suite": {
+          "$ref": "#/$defs/argv",
+          "description": "§12 item 6: the profile's own suite program, run as `<argv> --out <dir>` after the mechanism wrote that directory's `profile.json` and `manifest.json`. It writes `verdicts.json`. It is a program and not a file format, exactly as the emitter is, because a profile's own rules need arbitrary logic and the mechanism is not a programming language."
+        },
+        "deadlineMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "§9 and §11: the deadline one driven invocation is given. The manifest's own `conformance.deadlineMs` overrides it, and 1000 is the default when neither is set."
+        },
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "description": "§10 item 6 and §12: the profile's own rules, in the order the suite reports them. The six core rules come from `spec/core-rules.json` and must not be repeated here, because a profile that restates a core rule gets two verdicts for one check.",
+          "items": {
+            "type": "object",
+            "required": ["id", "expectation", "defect"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/ruleId",
+                "description": "Stable across releases: a report a plugin author has kept is compared on this id."
+              },
+              "expectation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "What the plugin must do, in one sentence, in the same voice as `spec/core-rules.json`."
+              },
+              "dependsOn": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/ruleId" },
+                "uniqueItems": true,
+                "description": "§12 item 3: rules whose violation makes this one impossible to run. Those are counted not applicable here, and never as passes."
+              },
+              "defect": {
+                "oneOf": [{ "$ref": "#/$defs/scriptedDefect" }, { "$ref": "#/$defs/unverifiedRule" }],
+                "description": "§12 item 4: either the scripted defect that makes exactly this rule report a violation, or an honest statement that no such defect exists yet and why."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "A program and its arguments, run verbatim, as §11 runs a plugin's `command`."
+    },
+    "schemaFile": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*\\.json$",
+      "description": "A committed JSON Schema file, resolved beside this file. Draft 2020-12, §10 item 2."
+    },
+    "ruleId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "description": "kebab-case, so a report line and a rule id are the same string."
+    },
+    "scriptedDefect": {
+      "type": "object",
+      "required": ["run", "expectViolation"],
+      "additionalProperties": false,
+      "properties": {
+        "run": {
+          "$ref": "#/$defs/argv",
+          "description": "How to start the plugin with the defect in place. Usually the manifest's `command` under an environment variable or a wrapper the profile's reference plugin reads; `env` entries are written beside it as `NAME=value` arguments are not, so the mechanism passes them to the child."
+        },
+        "env": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*=.*$" },
+          "uniqueItems": true,
+          "description": "Variables set on the defective plugin's process, as `NAME=value`."
+        },
+        "expectViolation": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ruleId" },
+          "uniqueItems": true,
+          "description": "The exact set of rules this defect must make report a violation. A defect that fires two rules proves neither."
+        }
+      }
+    },
+    "unverifiedRule": {
+      "type": "object",
+      "required": ["unverified"],
+      "additionalProperties": false,
+      "properties": {
+        "unverified": {
+          "type": "string",
+          "minLength": 1,
+          "description": "§12 item 4, stated instead of a defect: why none exists yet. A rule reported here is shown as unverified in the report, which is the honest alternative to a pass that nothing has tested."
+        }
+      }
+    }
+  }
+}
