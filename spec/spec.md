@@ -8,12 +8,10 @@ the failure they prevent.
 
 ## Status
 
-`prpc/1` is a preview. Every rule written below is normative as stated: a plugin that breaks one
-of them is wrong, and a host may reject it. What is not settled is the short list in §14, and the
-mechanism states nothing about those items in either direction, so a profile must not depend on
-an answer. A profile written against `prpc/1` should expect to change before the revision is
-declared stable. Declaring the revision stable removes this paragraph and §14; it changes no
-rule.
+`prpc/1` is the current revision. Every rule written below is normative as stated: a plugin that
+breaks one of them is wrong, and a host may reject it. The mechanism describes one connection
+between one host and one plugin process; a host that runs several plugins decides pooling,
+restarts, and how each process's output reaches its operator as its own policy (§3, §6).
 
 ## 1. Terms
 
@@ -76,14 +74,19 @@ requests from stdin and writes responses to stdout.
 
 - Each message is one UTF-8 encoded JSON value on one line, terminated by `\n`. The host and
   the plugin strip a trailing `\r` before the `\n`.
+- The mechanism sets no maximum message size, because a message ends at the newline and a limit
+  would be a number no host can justify for every profile. A profile whose payloads are large
+  states in its own document the size both peers must accept, because a plugin that caps its own
+  line reader below that size passes every rule against small fixtures and fails on a real
+  payload.
 - Whoever opens a pipe reads it continuously for as long as the connection lives. A pipe holds
   a limited amount of data, so a writer stops once the buffer is full and stays stopped until a
   reader takes the data out. This rule covers every pipe the host opens on the plugin, not only
   stdin and stdout: a host that captures the plugin's stderr without reading it stops the plugin
   partway through a write, and then records `no answer` (§8) for a cause that sits in the host.
 - The plugin's stderr carries the plugin's own logging. The mechanism assigns it no meaning and
-  defines no protocol over it, so a host may show it, store it, or discard it. A plugin puts no
-  message on stderr.
+  defines no protocol over it, so a host may show it, store it, or discard it; where those lines
+  reach an operator is the profile's to state. A plugin puts no message on stderr.
 - A blank line or an end-of-file on either pipe ends the connection (§8): the plugin process
   has exited or its stdout has closed, and the host records the event as the end of the
   connection.
@@ -359,20 +362,3 @@ because the envelope is open (§2) and the method vocabulary is the profile's (�
 A profile that adds a rule, a method, or a capability edits its own profile spec and needs no
 mechanism revision, and a profile spec that names a `mechanism` the host does not implement is
 refused at load time rather than run and misreported.
-
-## 14. Open items
-
-The mechanism states nothing about the three items below, and a host may choose its own behavior
-today.
-
-1. **Attribution of captured stderr.** A host that runs several plugin processes and captures
-   their stderr can merge the lines into one stream, which leaves the operator unable to tell
-   which process wrote which line. The mechanism does not require a host to keep them apart.
-2. **Reporting captured stderr.** A host may show, store, or discard the stderr it captures (§3).
-   A host that captures it and shows nothing pays the cost of reading it and gives the operator
-   nothing, so a profile that wants plugin diagnostics in its own reports should say so there.
-3. **Message size.** The mechanism needs no maximum message size to frame a message, because a
-   message ends at the newline (§3). A profile whose payloads are large should state the size
-   that both peers must accept, because a plugin written in another language may cap its line
-   reader below that size, pass every rule against small fixtures, and then fail on a real
-   payload.

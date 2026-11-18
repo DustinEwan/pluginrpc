@@ -21,11 +21,11 @@ carries `error`, and a **loss** is the host receiving no answer.
 
 ## Status
 
-`prpc/1` is a preview. Every rule in the specification is normative as written, and three items
-are open: whether a host must keep one plugin process's stderr separate from another's, whether
-a host must report the stderr it captures, and what message size a profile must promise. §14 of
-`spec/spec.md` gives each one. Declaring the revision stable removes that section and changes no
-rule.
+`prpc/1` is the current revision. Every rule in the specification is normative as written. The
+mechanism describes one connection between one host and one plugin process: a host that runs
+several plugins decides pooling, restarts, and how each process's output reaches its operator as
+its own policy, and the specification sets no maximum message size, leaving a profile whose
+payloads are large to state the size both peers must accept.
 
 ## Layout
 
