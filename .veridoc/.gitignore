@@ -1,0 +1,6 @@
+result.json
+last-result-hash
+out/
+target/
+engine.log
+verdicts/

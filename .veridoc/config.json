@@ -1,0 +1,23 @@
+{
+  "protocol": "veridoc/1",
+  "plugin": {
+    "name": "veridoc-plugin-rust",
+    "command": null,
+    "handshakeTimeoutMs": 30000,
+    "collectTimeoutMs": 120000
+  },
+  "coverage": {
+    "required": 0.0
+  },
+  "run": {
+    "scenarioDeadlineMs": 30000
+  },
+  "judge": null,
+  "output": {
+    "dir": ".veridoc/out",
+    "formatters": [
+      "markdown"
+    ]
+  },
+  "citationStores": []
+}
