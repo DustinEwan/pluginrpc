@@ -1,0 +1,59 @@
+{
+  "claims": [
+    {
+      "kind": "ensures",
+      "symbol": "parse_request",
+      "concept": "framing",
+      "predicate": "refuses-a-malformed-line",
+      "text": "parse_request refuses a line that is not JSON, and the reason it returns quotes the line it refused.",
+      "channel": {
+        "scenario": "framing/refuses-a-malformed-line",
+        "asserts": {
+          "all": [
+            { "obs": "accepted", "is": { "equals": false } },
+            { "obs": "reason", "is": { "contains": "this line is not json" } }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "requires",
+      "symbol": "parse_request",
+      "concept": "framing",
+      "predicate": "accepts-a-valid-request",
+      "text": "parse_request accepts a line that carries the envelope fields, so a plugin server dispatches on the same decode the host encodes.",
+      "channel": {
+        "scenario": "framing/accepts-a-valid-request",
+        "asserts": { "obs": "accepted", "is": { "equals": true } }
+      }
+    },
+    {
+      "kind": "ensures",
+      "symbol": "read_line",
+      "concept": "framing",
+      "predicate": "treats-a-blank-line-as-loss",
+      "text": "read_line stops at a blank line and reports loss, so a peer that sends one ends the connection instead of shifting every later message by one.",
+      "channel": {
+        "scenario": "framing/blank-line-is-loss",
+        "asserts": {
+          "all": [
+            { "obs": "messages", "is": { "equals": 1 } },
+            { "obs": "lost", "is": { "equals": true } }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "witness",
+      "concept": "framing",
+      "predicate": "refusals-name-their-line",
+      "text": "Every refusal the framing helpers return names the line it refused, and evidence/refusals.txt records the ones the harness produced.",
+      "channel": {
+        "artefact": {
+          "path": "evidence/refusals.txt",
+          "sha256": "cab58d099c5a9c939479d7888390a360d141d10a319303640bef056ccae3c96a"
+        }
+      }
+    }
+  ]
+}

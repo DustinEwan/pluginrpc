@@ -1,1 +1,4 @@
 /target
+
+# The scenario harness veridoc builds for a check, kept out of the crate's own target/.
+crates/*/.veridoc/target/

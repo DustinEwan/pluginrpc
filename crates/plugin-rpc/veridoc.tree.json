@@ -1,0 +1,34 @@
+{
+  "concepts": ["framing"],
+  "documents": [
+    {
+      "path": "docs/architecture.spec.md",
+      "audience": "a host or plugin author who reads the mechanism",
+      "question": "What does the mechanism do to a line it cannot use?"
+    }
+  ],
+  "observables": [
+    { "name": "accepted", "type": "boolean" },
+    { "name": "reason", "type": "string" },
+    { "name": "messages", "type": "number" },
+    { "name": "lost", "type": "boolean" }
+  ],
+  "actions": [
+    {
+      "name": "parse-a-request",
+      "calls": { "kind": "symbol", "name": "parse_request", "from": "src/lib.rs" },
+      "produces": ["accepted", "reason"]
+    },
+    {
+      "name": "read-a-pipe",
+      "calls": { "kind": "symbol", "name": "read_line", "from": "src/lib.rs" },
+      "produces": ["messages", "lost"]
+    }
+  ],
+  "fixtures": [
+    "fixtures/malformed-line",
+    "fixtures/valid-request",
+    "fixtures/blank-line"
+  ],
+  "harness": "veridoc-harness"
+}

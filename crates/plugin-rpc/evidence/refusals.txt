@@ -1,0 +1,3 @@
+Every refusal the framing helpers return names the line it refused. Captured from the harness:
+
+  fixtures/malformed-line  ->  malformed message: expected ident at line 1 column 2: this line is not json
