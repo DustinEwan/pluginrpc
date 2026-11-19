@@ -14,7 +14,7 @@
     },
     {
       "path": ".veridoc/config.json",
-      "sha256": "c51797b2ca3193d6c8ade8ad418e8c8478314d3197055a45dcd8a35fbe1e0478"
+      "sha256": "1ae99bec47903ec1e946708a71bcb01149ef5046e83ef80521dec816b7c24674"
     },
     {
       "path": "Cargo.lock",
@@ -137,12 +137,8 @@
       "sha256": "b0c0d832c9ed270c69ca3ea520f8172382f94518ce3b052a1b37734900d20800"
     },
     {
-      "path": "docs/architecture.spec.md",
-      "sha256": "4f9690c6b5c55b714f5db22e498c5833ff72323f530729d79a0e62403d4ada7f"
-    },
-    {
       "path": "index.doc.rs",
-      "sha256": "d62374eb3453fcbb6f9b8bda48f1e0ed454ebd0d3eea6bd61f0ccd5c14817be9"
+      "sha256": "d01989f5c8685a8abee1fbd5c9934b706c44770f3430bddd725661d2a745eeba"
     },
     {
       "path": "scripts/check_envelope_schemas.py",
@@ -175,6 +171,10 @@
     {
       "path": "spec/spec.md",
       "sha256": "42c0e3d22f3fd82eba21c20809a262531b90de5b7b04b3ca0ec1503a31c375c6"
+    },
+    {
+      "path": "unverified-docs/architecture.spec.md",
+      "sha256": "4f9690c6b5c55b714f5db22e498c5833ff72323f530729d79a0e62403d4ada7f"
     }
   ]
 }
