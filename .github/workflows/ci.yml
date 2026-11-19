@@ -68,6 +68,26 @@ jobs:
           python3 scripts/check_envelope_schemas.py
           python3 scripts/check_profile_schema.py
 
+  # The specification and the claims are the product here as much as the types are. `veridoc check`
+  # asks a model about the prose, so a person runs it, and it commits `.veridoc/inputs.json`: the
+  # hashes of the files that run read. This job is the gate for a job that cannot call a model. It
+  # starts no plugin and builds no harness, so it costs a directory of hashes, and it refuses a
+  # checkout whose documents, claim modules, or sources no longer match the record committed beside
+  # them.
+  veridoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the veridoc executable
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository_owner }}/veridoc/main/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: The input record is current
+        run: veridoc stat --project .
+
   # crates.io will not remove a published version, only yank it, and a yanked version still
   # resolves when asked for exactly. So the tag, not a person, decides the version, and this job
   # refuses to publish when the tag and the manifest disagree. Needs the repository secret

@@ -16,3 +16,9 @@ serde.workspace = true
 serde_json.workspace = true
 schemars.workspace = true
 thiserror.workspace = true
+
+# The claim library the harness example and the claim modules link. It is not on the registry yet, so
+# the dependency names the repository; a git dependency is allowed here because it is a
+# dev-dependency, which `cargo publish` does not need in order to build the library.
+[dev-dependencies]
+veridoc-claims = { git = "https://github.com/DustinEwan/veridoc-plugin-rust", package = "veridoc-claims" }

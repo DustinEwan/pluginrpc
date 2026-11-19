@@ -1,6 +1,5 @@
-<doc-section name="symbol-name">
+<doc-section name="parse_response">
 
-## What does the mechanism do to a line it cannot use?
+## What does the mechanism guarantee, and what does a profile still have to decide?
 
-Write the prose here, and name a claim where a sentence states one: <doc-claim name="predicate"/>.
-Rename `symbol-name` and `predicate` to the subject and the predicate you declare in a `*.claims.json` sidecar.
+The envelope carries exactly one of `result` or `error`, so `parse_response` refuses a response that carries both <doc-claim name="refuses-a-response-with-both-fields"/>: reading the result would report success while discarding the failure, and refusing the whole message is the only answer that reports neither falsely. What the mechanism leaves to a profile is the method set and the payload behind `result`.

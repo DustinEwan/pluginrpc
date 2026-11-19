@@ -28,6 +28,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "veridoc-claims",
 ]
 
 [[package]]
@@ -183,6 +184,11 @@ name = "unicode-ident"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
+
+[[package]]
+name = "veridoc-claims"
+version = "0.1.0"
+source = "git+https://github.com/DustinEwan/veridoc-plugin-rust#09ffe053fc837aaac07e42d5ae43c091383ad8a7"
 
 [[package]]
 name = "zmij"

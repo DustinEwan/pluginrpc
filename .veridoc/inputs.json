@@ -1,0 +1,180 @@
+{
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "dd369afe03345489752b5db8d4b5423c0b4a1817ece1b227ff37f8b63ab67041"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "e9bfab8210b251957ec1df5b7b37250df802b1306f93e34cfac76488dcd533da"
+    },
+    {
+      "path": ".veridoc/.gitignore",
+      "sha256": "2c855aac5698b33dc72027c4eb50c93dfbefb8312c37c2ddc6b76e8a94cf0492"
+    },
+    {
+      "path": ".veridoc/config.json",
+      "sha256": "c51797b2ca3193d6c8ade8ad418e8c8478314d3197055a45dcd8a35fbe1e0478"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "1d71bbb0556cc7852398b8d3d9667e8d375a268bc994497928a8cf60097a2fa4"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "20206ca698af7a89483a2909ff2bf1f1732916daa4189cf7a60022b81bfd362c"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "5e30f5d4a45684c6a9ecaba66c682f568d10d611c967e3bb3d4bbc3cdb6d4a62"
+    },
+    {
+      "path": "README.md",
+      "sha256": "41af65304f26f3da2e244734eebf26db00cc876c47d1c4faa080478aa32209c0"
+    },
+    {
+      "path": "crates/plugin-rpc/Cargo.toml",
+      "sha256": "205fc87436727a1e4683a81db2c7555fd44722476a20e38d5b3a3b224ad22560"
+    },
+    {
+      "path": "crates/plugin-rpc/core-rules.json",
+      "sha256": "e9d87cc1e1694b1d6ff13968aa0cd66a1c33638ef764b8defc095b3cc3b646a4"
+    },
+    {
+      "path": "crates/plugin-rpc/examples/veridoc.rs",
+      "sha256": "2a325030475dae01f463f12100a11a9832fefb73f4e1402708510e9bb5764e47"
+    },
+    {
+      "path": "crates/plugin-rpc/src/bin/prpc-core.rs",
+      "sha256": "b55104eb3121fd00e1d19b2cb1a382d79db4b1a6af04ae883b763b7546b8ea01"
+    },
+    {
+      "path": "crates/plugin-rpc/src/conformance/core.rs",
+      "sha256": "6c76bb7b612582226c246afc559c3560ebfd8451f913ff23954a7d2baa3c4088"
+    },
+    {
+      "path": "crates/plugin-rpc/src/conformance/mod.rs",
+      "sha256": "f90473ad29590fcc922115cddee11aed3dc6b3a8911272ec54819e7c3ff3f9a7"
+    },
+    {
+      "path": "crates/plugin-rpc/src/framing.doc.rs",
+      "sha256": "346422cd6b34ce97c86cd378d6d2ae20840b48546719f31429487cb65b3f51b2"
+    },
+    {
+      "path": "crates/plugin-rpc/src/lib.rs",
+      "sha256": "b637881d4dfe677bed553889a8ac0c8d1a5f66bd992f02c45d65f6db78ac1fc4"
+    },
+    {
+      "path": "crates/plugin-rpc/src/process.rs",
+      "sha256": "a6e0643d9a88676c7a1a04e8a730f3f50a112b8e569a761b95a2df50d7ef2466"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/core_rules.rs",
+      "sha256": "5d8b9a61bbd3a2ec72094ecec25b54e8908b53c13e32536f35a78724d053dd0d"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/envelope_parity.rs",
+      "sha256": "347f48d33ae85b2337412aa2cb877723c7b76dc142c92ed9522fb220e2eefae2"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/demo-1.profile.json",
+      "sha256": "1dc88670a761c311ff452d194c69fdbf6ecd23b09155342e9e8aa54ed3cb24c6"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/demo.sh",
+      "sha256": "3a001a02026ad9a2b746b0acf356c4d2b65f1d23c8b9f97aa5a81386639d14bb"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/schema/ping-req.json",
+      "sha256": "b8473c842090fff14e9a399c9881177bfabf0b7f8533e3b67dc2252525aba2e7"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/schema/ping.json",
+      "sha256": "54b0c3afbcfce1a1776606517764244a25f2494c49cfb6333fead76646731371"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/schema/prepare-req.json",
+      "sha256": "8b5703a8e590573cd4d11124eb5a86551e5b1fc9f86488c920bbb7bada44737b"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/schema/prepared.json",
+      "sha256": "14eadb0c976ea75346c8d1b136fb5d7a27e7f576ef4b474b0753c411f0ad59eb"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/schema/ready-resp.json",
+      "sha256": "6527d24876c4297932b5a16276a8d119b77fabca2d3f1ff35825162db26cf631"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/suite-defect.sh",
+      "sha256": "50b2d4172476dce2d007818e4e459c37fe4d7e75d41ada7649bf816515b8c769"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/fixtures/suite.sh",
+      "sha256": "59b9e44cab64d37ba13481307d3de19b662d5e3b9f2a2e00d13f8ae7e150444a"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/messages.json",
+      "sha256": "b1a424eeb7ebbfb769ae0d975202695a63aee68e05cbfb7869e43a10edecee6c"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/process.rs",
+      "sha256": "799e289dc0d9e076e84834d23b65edc6ff93a57020427f58dc995d3c15110883"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/profile_cases.json",
+      "sha256": "7f81ab8d29a269872375279e1fb4988a6c090795cd1ed999ca5108c7ba4b7bcb"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/profile_spec.rs",
+      "sha256": "a9aac07b1256786b3980e66a36a0f08e33e32be267ff08048c8d5ddca320a247"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/round_trip.rs",
+      "sha256": "33e6bac27ffdc12dc5de1c02e9b3b942f34f7d969df832f543278c7d6d99a638"
+    },
+    {
+      "path": "crates/plugin-rpc/tests/suite.rs",
+      "sha256": "b0c0d832c9ed270c69ca3ea520f8172382f94518ce3b052a1b37734900d20800"
+    },
+    {
+      "path": "docs/architecture.spec.md",
+      "sha256": "4f9690c6b5c55b714f5db22e498c5833ff72323f530729d79a0e62403d4ada7f"
+    },
+    {
+      "path": "index.doc.rs",
+      "sha256": "d62374eb3453fcbb6f9b8bda48f1e0ed454ebd0d3eea6bd61f0ccd5c14817be9"
+    },
+    {
+      "path": "scripts/check_envelope_schemas.py",
+      "sha256": "4c2abec353a7a22cf597dd94bcc78657d84658dca1feb2b472ee1c44f7592138"
+    },
+    {
+      "path": "scripts/check_profile_schema.py",
+      "sha256": "0c6adcb0e12a8783553ed5975deea607dd8eeb467311a214407f18fdba6ec434"
+    },
+    {
+      "path": "spec/core-rules.json",
+      "sha256": "e9d87cc1e1694b1d6ff13968aa0cd66a1c33638ef764b8defc095b3cc3b646a4"
+    },
+    {
+      "path": "spec/schema/prpc-1/handshake.json",
+      "sha256": "0e1ccdaec95c89068b4cb07c6119ad34c9e57b2aef319c8ecb3094b8c60577be"
+    },
+    {
+      "path": "spec/schema/prpc-1/profile.json",
+      "sha256": "5875278b7a3f46ca49966b0edbc61daab6e853039e69a85f575153dccbe350db"
+    },
+    {
+      "path": "spec/schema/prpc-1/request.json",
+      "sha256": "1dd75d090bc5f4cdb794e94f0c484ebf4a6f2f1e9299b16b393dd73397ea74b6"
+    },
+    {
+      "path": "spec/schema/prpc-1/response.json",
+      "sha256": "d2c9e365980462edcad8c916da930fc041757ae1e06c4d8ba6575b0c86ffd606"
+    },
+    {
+      "path": "spec/spec.md",
+      "sha256": "42c0e3d22f3fd82eba21c20809a262531b90de5b7b04b3ca0ec1503a31c375c6"
+    }
+  ]
+}
