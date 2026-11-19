@@ -6,7 +6,7 @@
     },
     {
       "path": ".gitignore",
-      "sha256": "e9bfab8210b251957ec1df5b7b37250df802b1306f93e34cfac76488dcd533da"
+      "sha256": "8f8885d0b015a15090cb182b04355b11f0bc72e424e3d879016ad4eaf7baf69d"
     },
     {
       "path": ".veridoc/.gitignore",
@@ -14,7 +14,7 @@
     },
     {
       "path": ".veridoc/config.json",
-      "sha256": "1ae99bec47903ec1e946708a71bcb01149ef5046e83ef80521dec816b7c24674"
+      "sha256": "81f191ee5d9b3a35b0e3eedc9912099f5c4b4ed2307300c9ff935f9dbd3c92cb"
     },
     {
       "path": "Cargo.lock",

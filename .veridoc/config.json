@@ -12,7 +12,12 @@
   "run": {
     "scenarioDeadlineMs": 30000
   },
-  "judge": null,
+  "judge": {
+    "provider": "openai",
+    "model": "localcoder",
+    "baseUrl": "${VERIDOC_JUDGE_BASE_URL}",
+    "apiKeyEnv": "RADIANCE_API_KEY"
+  },
   "output": {
     "dir": "./docs",
     "formatters": [

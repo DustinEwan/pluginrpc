@@ -2,3 +2,7 @@
 
 # The scenario harness veridoc builds for a check, kept out of the crate's own target/.
 .veridoc/target/
+
+# The address of the model server this machine runs, which `.veridoc/config.json` names as
+# `${VERIDOC_JUDGE_BASE_URL}`.
+.env
